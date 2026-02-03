@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
 import { useAppStore } from './store'
@@ -76,6 +77,9 @@ function App() {
 
       {/* Main Editor Area */}
       <Editor ref={editorRef} />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
