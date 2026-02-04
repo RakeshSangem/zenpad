@@ -20,12 +20,15 @@ const createNewNote = () => {
   }
 }
 
+// Create initial note and use its ID for currentNoteId
+const initialNote = createNewNote()
+
 export const useAppStore = create(
   persist(
     (set, get) => ({
       // Notes state
-      notes: [createNewNote()],
-      currentNoteId: null,
+      notes: [initialNote],
+      currentNoteId: initialNote.id,
       
       // UI state
       sidebarVisible: false,

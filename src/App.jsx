@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
@@ -25,31 +25,13 @@ function App() {
     currentNoteId,
     notes,
     switchToNote,
+    toggleSidebar,
   } = useAppStore()
   
   // Initialize keyboard shortcuts
   useKeyboardShortcuts()
   
   const currentNote = getCurrentNote()
-  
-  // Focus editor when sidebar closes
-  useEffect(() => {
-    if (!sidebarVisible) {
-      setTimeout(() => {
-        editorRef.current?.focus()
-      }, 150)
-    }
-  }, [sidebarVisible])
-  
-  // Focus save input when save modal opens
-  useEffect(() => {
-    if (saveModalOpen) {
-      setTimeout(() => {
-        saveInputRef.current?.focus()
-        saveInputRef.current?.select()
-      }, 100)
-    }
-  }, [saveModalOpen])
   
   const handleSaveTitle = (title) => {
     if (title.trim()) {
@@ -209,6 +191,8 @@ function App() {
               defaultValue={currentNote?.title || ''}
               placeholder="Enter note title..."
               className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 transition-colors mb-4"
+              autoFocus
+              onFocus={(e) => e.target.select()}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSaveTitle(e.target.value)

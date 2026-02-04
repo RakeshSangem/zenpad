@@ -46,7 +46,6 @@ const extractTitle = (note) => {
 }
 
 const Sidebar = forwardRef(({ onSelectNote }, ref) => {
-  const internalRef = useRef(null)
   const noteRefs = useRef([])
   
   const {
@@ -57,15 +56,6 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
     openShortcutsModal,
   } = useAppStore()
   
-  // Combine refs
-  useEffect(() => {
-    if (typeof ref === 'function') {
-      ref(internalRef.current)
-    } else if (ref) {
-      ref.current = internalRef.current
-    }
-  }, [ref])
-
   const sortedNotes = useMemo(() => {
     return [...notes].sort((a, b) => {
       return new Date(b.updatedAt) - new Date(a.updatedAt)
@@ -148,12 +138,19 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
 
   return (
     <div 
-      ref={internalRef}
-      className={`fixed left-4 top-4 bottom-4 w-80 z-40 transition-all duration-200 ease-out ${sidebarVisible ? 'translate-x-0 opacity-100' : '-translate-x-[calc(100%+24px)] opacity-0 pointer-events-none'}`}
+      ref={ref}
       tabIndex={-1}
       onKeyDown={sidebarVisible ? handleKeyDown : undefined}
+      className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-out ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'} sm:left-4 sm:top-4 sm:bottom-4 sm:w-80 sm:rounded-2xl ${sidebarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
-      <div className="h-full bg-white dark:bg-[#1f1f1f] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-lg flex flex-col overflow-hidden">
+      {/* Backdrop for clicking outside */}
+      {sidebarVisible && (
+        <div 
+          className="absolute inset-0 -z-10"
+          onClick={closeSidebar}
+        />
+      )}
+      <div className="h-full bg-white dark:bg-[#1f1f1f] sm:rounded-2xl border-r sm:border border-neutral-200 dark:border-[#2a2a2a] shadow-lg sm:shadow-xl flex flex-col overflow-hidden">
         {/* Header with zenpad title */}
         <div className="px-4 py-3 border-b border-neutral-200 dark:border-[#2a2a2a] flex items-center justify-between">
           <div className="flex items-center gap-2">
