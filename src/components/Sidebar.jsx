@@ -53,6 +53,7 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
     currentNoteId,
     sidebarVisible,
     closeSidebar,
+    toggleSidebar,
     openShortcutsModal,
   } = useAppStore()
   
@@ -123,11 +124,12 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
       case 'B':
         if (isModKey) {
           event.preventDefault()
-          closeSidebar()
+          event.stopPropagation()
+          toggleSidebar()
         }
         break
     }
-  }, [sortedNotes, focusedIndex, currentNoteId, onSelectNote, closeSidebar])
+  }, [sortedNotes, focusedIndex, currentNoteId, onSelectNote, closeSidebar, toggleSidebar])
 
   // Handle individual note click
   const handleNoteClick = useCallback((noteId, index) => {
@@ -137,20 +139,22 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
   }, [onSelectNote, closeSidebar])
 
   return (
-    <div 
-      ref={ref}
-      tabIndex={-1}
-      onKeyDown={sidebarVisible ? handleKeyDown : undefined}
-      className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-out ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'} sm:left-4 sm:top-4 sm:bottom-4 sm:w-80 sm:rounded-2xl ${sidebarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-    >
-      {/* Backdrop for clicking outside */}
+    <>
       {sidebarVisible && (
-        <div 
-          className="absolute inset-0 -z-10"
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-30 bg-transparent"
           onClick={closeSidebar}
         />
       )}
-      <div className="h-full bg-white dark:bg-[#1f1f1f] sm:rounded-2xl border-r sm:border border-neutral-200 dark:border-[#2a2a2a] shadow-lg sm:shadow-xl flex flex-col overflow-hidden">
+      <div 
+        ref={ref}
+        tabIndex={-1}
+        onKeyDown={sidebarVisible ? handleKeyDown : undefined}
+        className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-out ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'} sm:left-4 sm:top-4 sm:bottom-4 sm:w-80 sm:rounded-2xl ${sidebarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <div className="h-full bg-white dark:bg-[#1f1f1f] sm:rounded-2xl border-r sm:border border-neutral-200 dark:border-[#2a2a2a] shadow-lg sm:shadow-xl flex flex-col overflow-hidden">
         {/* Header with zenpad title */}
         <div className="px-4 py-3 border-b border-neutral-200 dark:border-[#2a2a2a] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -165,12 +169,22 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
             </svg>
             <span className="font-semibold text-neutral-800 dark:text-neutral-200 tracking-tight">zenpad</span>
           </div>
-          
+
           <button
-            onClick={openShortcutsModal}
-            className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors px-2 py-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            type="button"
+            onClick={closeSidebar}
+            className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            aria-label="Close sidebar"
           >
-            ?
+            <svg
+              className="h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style={{ transform: 'scaleX(-1)' }}
+            >
+              <path d="M9.367 2.25h5.266c1.092 0 1.958 0 2.655.057c.714.058 1.317.18 1.869.46a4.75 4.75 0 0 1 2.075 2.077c.281.55.403 1.154.461 1.868c.057.697.057 1.563.057 2.655v5.266c0 1.092 0 1.958-.057 2.655c-.058.714-.18 1.317-.46 1.869a4.75 4.75 0 0 1-2.076 2.075c-.552.281-1.155.403-1.869.461c-.697.057-1.563.057-2.655.057H9.367c-1.092 0-1.958 0-2.655-.057c-.714-.058-1.317-.18-1.868-.46a4.75 4.75 0 0 1-2.076-2.076c-.281-.552-.403-1.155-.461-1.869c-.057-.697-.057-1.563-.057-2.655V9.367c0-1.092 0-1.958.057-2.655c.058-.714.18-1.317.46-1.868a4.75 4.75 0 0 1 2.077-2.076c.55-.281 1.154-.403 1.868-.461c.697-.057 1.563-.057 2.655-.057M8.25 3.752c-.565.005-1.024.017-1.416.049c-.62.05-1.005.147-1.31.302a3.25 3.25 0 0 0-1.42 1.42c-.155.305-.251.69-.302 1.31c-.051.63-.052 1.434-.052 2.566v5.2c0 1.133 0 1.937.052 2.566c.05.62.147 1.005.302 1.31a3.25 3.25 0 0 0 1.42 1.42c.305.155.69.251 1.31.302c.392.032.851.044 1.416.05V3.752zm5.477 5.248a.75.75 0 0 0-1.06 1.06l1.19 1.19H10.5a.75.75 0 0 0 0 1.5h3.357l-1.19 1.19a.75.75 0 1 0 1.06 1.06l2.47-2.47a.75.75 0 0 0 0-1.06z" />
+            </svg>
           </button>
         </div>
         
@@ -217,13 +231,22 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
         </div>
         
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f]">
+        <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f] flex items-center justify-between gap-3">
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
             Cmd/Ctrl + B to hide
           </p>
+          <button
+            type="button"
+            onClick={openShortcutsModal}
+            className="rounded-md px-2 py-1 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            aria-label="Show keyboard shortcuts"
+          >
+            ?
+          </button>
+        </div>
         </div>
       </div>
-    </div>
+    </>
   )
 })
 
