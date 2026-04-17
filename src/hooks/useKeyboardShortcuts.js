@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { useAppStore } from '../store'
+import { useEffect } from "react";
+import { useAppStore } from "../store";
 
 // Custom hook for global keyboard shortcuts
 export const useKeyboardShortcuts = () => {
@@ -18,96 +18,97 @@ export const useKeyboardShortcuts = () => {
     deleteNote,
     navigateNotes,
     getCurrentNote,
-  } = useAppStore()
+  } = useAppStore();
 
   // Check if any modal is open
-  const isModalOpen = saveModalOpen || deleteModalOpen || shortcutsModalOpen
+  const isModalOpen = saveModalOpen || deleteModalOpen || shortcutsModalOpen;
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const { key, metaKey, ctrlKey, altKey } = event
-      const isModKey = metaKey || ctrlKey
+      const { key, metaKey, ctrlKey, altKey } = event;
+      const isModKey = metaKey || ctrlKey;
 
       // Handle Escape key - close modals or sidebar
-      if (key === 'Escape') {
-        event.preventDefault()
+      if (key === "Escape") {
+        event.preventDefault();
         if (isModalOpen) {
-          closeAllModals()
+          closeAllModals();
         } else if (sidebarVisible) {
-          closeSidebar()
+          closeSidebar();
         }
-        return
+        return;
       }
 
       // Handle shortcuts help (?) - when not typing in input
-      if ((key === '?' || key === '/') && !isModalOpen && !sidebarVisible) {
-        const target = event.target
-        const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+      if ((key === "?" || key === "/") && !isModalOpen && !sidebarVisible) {
+        const target = event.target;
+        const isInput =
+          target.tagName === "INPUT" || target.tagName === "TEXTAREA";
         if (!isInput) {
-          event.preventDefault()
-          openShortcutsModal()
-          return
+          event.preventDefault();
+          openShortcutsModal();
+          return;
         }
       }
 
       // Only handle mod key shortcuts below
-      if (!isModKey) return
+      if (!isModKey) return;
 
       // Block browser shortcuts and handle our shortcuts
-      const blockedKeys = ['n', 's', 'd', 'b', 'p']
+      const blockedKeys = ["n", "s", "d", "b", "p"];
       if (blockedKeys.includes(key.toLowerCase())) {
-        event.preventDefault()
-        event.stopPropagation()
+        event.preventDefault();
+        event.stopPropagation();
       }
 
       // Handle arrow keys in editor (not in sidebar)
       if (!sidebarVisible && !isModalOpen) {
-        if (key === 'ArrowUp') {
-          event.preventDefault()
-          event.stopPropagation()
-          navigateNotes('prev')
-          return
+        if (key === "ArrowUp") {
+          event.preventDefault();
+          event.stopPropagation();
+          navigateNotes("prev");
+          return;
         }
-        if (key === 'ArrowDown') {
-          event.preventDefault()
-          event.stopPropagation()
-          navigateNotes('next')
-          return
+        if (key === "ArrowDown") {
+          event.preventDefault();
+          event.stopPropagation();
+          navigateNotes("next");
+          return;
         }
       }
 
       // Handle shortcuts
       switch (key.toLowerCase()) {
-        case 'n':
-          createNote()
-          return
-        case 's':
-          openSaveModal()
-          return
-        case 'd':
+        case "n":
+          createNote();
+          return;
+        case "s":
+          openSaveModal();
+          return;
+        case "d":
           if (!isModalOpen) {
-            const currentNote = getCurrentNote()
+            const currentNote = getCurrentNote();
             // Don't allow deleting the last note
-            const notes = useAppStore.getState().notes
+            const notes = useAppStore.getState().notes;
             if (notes.length > 1) {
-              openDeleteModal()
+              openDeleteModal();
             }
           }
-          return
-        case 'b':
+          return;
+        case "b":
           if (!isModalOpen) {
-            toggleSidebar()
+            toggleSidebar();
           }
-          return
-        case 'p':
+          return;
+        case "p":
           // Block print dialog
-          return
+          return;
       }
-    }
+    };
 
     // Use normal phase, not capture - let textarea handle typing first
-    window.addEventListener('keydown', handleKeyDown, false)
-    return () => window.removeEventListener('keydown', handleKeyDown, false)
+    window.addEventListener("keydown", handleKeyDown, false);
+    return () => window.removeEventListener("keydown", handleKeyDown, false);
   }, [
     sidebarVisible,
     isModalOpen,
@@ -121,5 +122,5 @@ export const useKeyboardShortcuts = () => {
     deleteNote,
     navigateNotes,
     getCurrentNote,
-  ])
-}
+  ]);
+};

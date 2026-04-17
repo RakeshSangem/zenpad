@@ -2,8 +2,15 @@ import React, { useRef } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
+import PWAUpdateBanner from './components/PWAUpdateBanner'
 import { useAppStore } from './store'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+
+const shouldLoadAnalytics =
+  import.meta.env.PROD &&
+  typeof window !== 'undefined' &&
+  window.location.hostname !== 'localhost' &&
+  window.location.hostname !== '127.0.0.1'
 
 function App() {
   const editorRef = useRef(null)
@@ -60,8 +67,10 @@ function App() {
       {/* Main Editor Area */}
       <Editor ref={editorRef} />
 
-      {/* Vercel Web Analytics */}
-      <Analytics />
+      {/* Avoid external analytics requests during local preview/offline testing */}
+      {shouldLoadAnalytics && <Analytics />}
+
+      <PWAUpdateBanner />
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
