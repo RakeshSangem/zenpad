@@ -2,10 +2,9 @@ import React from "react";
 import { usePWAUpdate } from "../hooks/usePWAUpdate";
 
 function PWAUpdateBanner() {
-  const { needRefresh, offlineReady, updateServiceWorker, dismissPrompt } =
-    usePWAUpdate();
+  const { needRefresh, updateServiceWorker, dismissPrompt } = usePWAUpdate();
 
-  if (!needRefresh && !offlineReady) {
+  if (!needRefresh) {
     return null;
   }
 
@@ -14,12 +13,10 @@ function PWAUpdateBanner() {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
-            {needRefresh ? "Update available" : "Offline mode ready"}
+            Update available
           </p>
           <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-            {needRefresh
-              ? "A newer version is ready. Reload to apply it."
-              : "Zenpad is cached and can reopen without a network connection."}
+            A newer version is ready. Reload to apply it.
           </p>
         </div>
         <button
@@ -45,17 +42,15 @@ function PWAUpdateBanner() {
       </div>
 
       <div className="mt-2 flex items-center gap-1.5">
-        {needRefresh && (
-          <button
-            type="button"
-            onClick={() => updateServiceWorker()}
-            className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
-          >
-            Reload now
-          </button>
-        )}
-          <button
-            type="button"
+        <button
+          type="button"
+          onClick={() => updateServiceWorker()}
+          className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+        >
+          Reload now
+        </button>
+        <button
+          type="button"
             onClick={dismissPrompt}
             className="rounded-md border border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900 dark:border-[#2a2a2a] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
           >
