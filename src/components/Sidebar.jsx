@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useAppStore } from "../store";
 import { noteTitle, notePreview } from "../lib/noteSummary";
+import { shortcutLabel } from "../lib/platform";
 import Logo from "./Logo";
 import AccountMenu from "./AccountMenu";
 import { Button } from "./ui/button";
@@ -116,8 +117,8 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           event.preventDefault();
           closeSidebar();
           break;
-        case "b":
-        case "B":
+        case "\\":
+          // Matches the global sidebar toggle; Mod+B belongs to bold.
           if (isModKey) {
             event.preventDefault();
             event.stopPropagation();
@@ -242,7 +243,7 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f] flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                ⌘ \
+                {shortcutLabel(["Mod", "\\"])}
               </span>
               <Button
                 type="button"

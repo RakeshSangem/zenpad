@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Trash2 } from "lucide-react";
 import { useAppStore } from "../store";
 import { noteTitle, notePreview } from "../lib/noteSummary";
 import {
@@ -25,6 +25,7 @@ function QuickSwitcher({ onSelectNote }) {
     closeQuickSwitcher,
     createNote,
     updateNoteTitle,
+    openDeleteModal,
   } = useAppStore();
   const [query, setQuery] = useState("");
 
@@ -117,6 +118,22 @@ function QuickSwitcher({ onSelectNote }) {
                 {query ? `New note “${query}”` : "New note"}
               </span>
             </CommandItem>
+            {notes.length > 1 && (
+              <CommandItem
+                // Mod+Backspace yields to text editing, so this is how you
+                // delete the note you are in the middle of writing.
+                forceMount
+                value="delete note remove"
+                onSelect={() => {
+                  close();
+                  openDeleteModal();
+                }}
+                className="gap-2.5 py-2 text-red-600 [&_svg]:text-red-600 dark:text-red-400 dark:[&_svg]:text-red-400"
+              >
+                <Trash2 className="shrink-0" strokeWidth={1.75} />
+                <span className="text-sm">Delete this note</span>
+              </CommandItem>
+            )}
           </CommandGroup>
         </CommandList>
       </Command>

@@ -11,6 +11,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useSyncNotes } from "./hooks/useSyncNotes";
 import { Button } from "./components/ui/button";
 import { Kbd, KbdGroup } from "./components/ui/kbd";
+import { isApplePlatform, shortcutLabel } from "./lib/platform";
 import {
   Dialog,
   DialogContent,
@@ -26,33 +27,42 @@ const shouldLoadAnalytics =
   window.location.hostname !== "localhost" &&
   window.location.hostname !== "127.0.0.1";
 
-
-// Shown in the help dialog. Cmd is rendered for every platform because the
-// bindings are mod-key based; Ctrl users read it the same way.
+// Shown in the help dialog. Keys are tokens so they can be labelled per
+// platform — "Mod K" renders as "⌘ K" on a Mac and "Ctrl+K" elsewhere.
 const SHORTCUT_SECTIONS = [
   {
     title: "Notes",
     items: [
-      { label: "Search notes", keys: ["⌘ K"] },
-      { label: "New note", keys: ["⌘ ⌥ N"] },
-      { label: "Delete note", keys: ["⌘ ⌫"] },
-      { label: "Previous / next note", keys: ["⌘ ⌥ ↑ ↓"] },
+      { label: "Search notes", keys: [["Mod", "K"]] },
+      { label: "New note", keys: [["Mod", "Alt", "N"]] },
+      { label: "Delete note", keys: [["Mod", "Backspace"]] },
+      { label: "Previous / next note", keys: [["Mod", "Alt", "↑ ↓"]] },
     ],
   },
   {
     title: "Navigation",
     items: [
-      { label: "Toggle sidebar", keys: ["⌘ \\"] },
-      { label: "Top / bottom of note", keys: ["⌘ ↑ ↓"] },
-      { label: "Close dialog or sidebar", keys: ["Esc"] },
+      { label: "Toggle sidebar", keys: [["Mod", "\\"]] },
+      {
+        label: "Top / bottom of note",
+        keys: [isApplePlatform() ? ["Mod", "↑ ↓"] : ["Ctrl", "Home / End"]],
+      },
+      { label: "Close dialog or sidebar", keys: [["Esc"]] },
     ],
   },
   {
     title: "Writing",
     items: [
-      { label: "Insert block", keys: ["/"] },
-      { label: "Bold / italic / underline", keys: ["⌘ B", "⌘ I", "⌘ U"] },
-      { label: "Show shortcuts", keys: ["⌘ /", "?"] },
+      { label: "Insert block", keys: [["/"]] },
+      {
+        label: "Bold / italic / underline",
+        keys: [
+          ["Mod", "B"],
+          ["Mod", "I"],
+          ["Mod", "U"],
+        ],
+      },
+      { label: "Show shortcuts", keys: [["Mod", "/"], ["?"]] },
     ],
   },
 ];
@@ -199,14 +209,14 @@ function AuthenticatedApp() {
                       {item.label}
                     </span>
                     <KbdGroup className="shrink-0">
-                      {item.keys.map((keyLabel, index) => (
-                        <React.Fragment key={keyLabel}>
+                      {item.keys.map((tokens, index) => (
+                        <React.Fragment key={tokens.join()}>
                           {index > 0 && (
                             <span className="text-xs text-neutral-300 dark:text-neutral-600">
                               or
                             </span>
                           )}
-                          <Kbd>{keyLabel}</Kbd>
+                          <Kbd>{shortcutLabel(tokens)}</Kbd>
                         </React.Fragment>
                       ))}
                     </KbdGroup>
@@ -221,7 +231,6 @@ function AuthenticatedApp() {
           </p>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

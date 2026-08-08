@@ -75,11 +75,25 @@ export const useKeyboardShortcuts = () => {
         }
       }
 
-      // Delete the current note. Cmd+Backspace reads as "delete" and, unlike
-      // Cmd+D, is not the browser's bookmark shortcut.
-      if (key === "Backspace" && !isModalOpen) {
+      // Delete the current note. Mod+Backspace already means something inside
+      // text — delete to start of line on macOS, delete previous word on
+      // Windows and Linux — so it only deletes a note when you are not typing.
+      // While typing, the same action is a click away in Cmd/Ctrl+K.
+      if (key === "Backspace") {
+        if (isModalOpen || isEditingTarget(event.target)) return;
         event.preventDefault();
         if (useAppStore.getState().notes.length > 1) openDeleteModal();
+        return;
+      }
+
+      // Some layouts (German, Nordic) put "\\" behind AltGr, so accept the
+      // physical key as well.
+      if (key === "\\" || event.code === "Backslash") {
+        // The sidebar lives here rather than on Mod+B, which the editor needs
+        // for bold while you are typing.
+        event.preventDefault();
+        event.stopPropagation();
+        if (!isModalOpen) toggleSidebar();
         return;
       }
 
@@ -95,13 +109,6 @@ export const useKeyboardShortcuts = () => {
           event.preventDefault();
           event.stopPropagation();
           if (!isModalOpen) openQuickSwitcher();
-          return;
-        case "\\":
-          // Sidebar lives here rather than on Cmd+B, which the editor needs
-          // for bold while you are typing.
-          event.preventDefault();
-          event.stopPropagation();
-          if (!isModalOpen) toggleSidebar();
           return;
         case "/":
           event.preventDefault();
