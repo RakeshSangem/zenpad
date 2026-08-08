@@ -11,6 +11,7 @@ import { Markdown } from "@tiptap/markdown";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
+import Underline from "@tiptap/extension-underline";
 import { useAppStore } from "../store";
 import { resolveCommandMenuKey } from "../lib/commandKeyboard";
 import { looksLikeMarkdown } from "../lib/markdownPaste";
@@ -18,6 +19,7 @@ import { PanelLeft } from "lucide-react";
 import { Button } from "./ui/button";
 import NoteTitleInput from "./editor/NoteTitleInput";
 import SlashCommandMenu from "./editor/SlashCommandMenu";
+import TableControls from "./editor/TableControls";
 import {
   SLASH_COMMANDS,
   SlashCommandFeedback,
@@ -28,6 +30,7 @@ const Editor = forwardRef((props, forwardedRef) => {
   const titleRef = useRef(null);
   const textareaRef = useRef(null);
   const loadingNoteRef = useRef(false);
+  const appliedDocumentRef = useRef(null);
   const slashKeyHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
   const [slashMenu, setSlashMenu] = useState(null);
@@ -95,10 +98,15 @@ const Editor = forwardRef((props, forwardedRef) => {
       TaskItem.configure({ nested: true }),
       TableKit.configure({
         table: {
-          resizable: false,
+          resizable: true,
+          // Matches the cell min-width in index.css so a drag cannot shrink a
+          // column past what the styles will render.
+          cellMinWidth: 56,
+          handleWidth: 6,
           renderWrapper: true,
         },
       }),
+      Underline,
       Placeholder.configure({
         placeholder: "Capture a thought...",
       }),
@@ -108,8 +116,12 @@ const Editor = forwardRef((props, forwardedRef) => {
     content: "",
     onUpdate: ({ editor: instance }) => {
       if (loadingNoteRef.current) return;
+      const nextDocument = instance.getJSON();
+      // Remember the exact object handed to the store; identity is how the
+      // loader below tells our own edits from a note swap or a sync pull.
+      appliedDocumentRef.current = nextDocument;
       updateNoteDocument({
-        document: instance.getJSON(),
+        document: nextDocument,
         markdown: instance.getMarkdown(),
       });
       updateSlashMenu(instance);
@@ -193,10 +205,15 @@ const Editor = forwardRef((props, forwardedRef) => {
 
   useEffect(() => {
     if (!note || !editor || !markdownEnabled) return;
-    // Markdown is the persisted canonical representation. Comparing it avoids
-    // reloading Tiptap after our own JSON update, which would reset the caret
-    // in the middle of a list item while the user is typing.
-    const documentChanged = editor.getMarkdown() !== (note.content || "");
+    // Reloading is decided by document identity, not by comparing Markdown:
+    // Markdown cannot express everything the document holds (table column
+    // widths, for one), so a remote change that only touches those would look
+    // identical and never reach the editor. Notes stored before documents were
+    // persisted still fall back to the Markdown comparison.
+    const documentChanged = note.document
+      ? note.document !== appliedDocumentRef.current
+      : editor.getMarkdown() !== (note.content || "");
+
     if (documentChanged) {
       loadingNoteRef.current = true;
       if (note.document) {
@@ -207,13 +224,21 @@ const Editor = forwardRef((props, forwardedRef) => {
           emitUpdate: false,
         });
       }
+      appliedDocumentRef.current = note.document ?? null;
       loadingNoteRef.current = false;
       setSlashMenu(null);
     }
     if (!sidebarVisible) {
       if (!note.title.trim() && !note.content.trim()) titleRef.current?.focus();
     }
-  }, [note?.id, editor, markdownEnabled, sidebarVisible]);
+  }, [
+    note?.id,
+    note?.document,
+    note?.content,
+    editor,
+    markdownEnabled,
+    sidebarVisible,
+  ]);
 
   useEffect(() => {
     if (markdownEnabled || !textareaRef.current) return;
@@ -266,9 +291,9 @@ const Editor = forwardRef((props, forwardedRef) => {
             }}
           />
           {markdownEnabled ? (
-            <div>
+            <TableControls editor={editor}>
               <EditorContent editor={editor} className="tiptap-editor" />
-            </div>
+            </TableControls>
           ) : (
             <textarea
               ref={textareaRef}

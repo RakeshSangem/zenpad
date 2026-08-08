@@ -307,7 +307,8 @@
   .tiptap-editor .tiptap .tableWrapper {
     border: 1px solid #d4d4d4;
     border-radius: 6px;
-    margin: 1em 0;
+    /* Room for the row/column grips and the append strips (TableControls). */
+    margin: 16px 22px 22px 0;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -326,7 +327,9 @@
     border-bottom: 1px solid #d4d4d4;
     border-right: 1px solid #d4d4d4;
     line-height: 1.45;
-    min-width: 80px;
+    /* Keep in sync with cellMinWidth in Editor.jsx — a larger value here would
+       silently block the drag from shrinking a column any further. */
+    min-width: 56px;
     overflow-wrap: anywhere;
     padding: 7px 9px;
     position: relative;
@@ -360,6 +363,22 @@
     position: absolute;
   }
 
+  /* Column resizing: prosemirror-tables draws the marker, we style it. */
+  .tiptap-editor .tiptap .column-resize-handle {
+    background: #737373;
+    bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    right: -1px;
+    top: 0;
+    width: 2px;
+    z-index: 10;
+  }
+
+  .tiptap-editor .tiptap.resize-cursor {
+    cursor: col-resize;
+  }
+
   @media (prefers-color-scheme: dark) {
     .tiptap-editor .tiptap .tableWrapper {
       border-color: #404040;
@@ -376,6 +395,10 @@
 
     .tiptap-editor .tiptap .selectedCell::after {
       background: rgb(163 163 163 / 0.12);
+    }
+
+    .tiptap-editor .tiptap .column-resize-handle {
+      background: #a3a3a3;
     }
   }
 
