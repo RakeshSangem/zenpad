@@ -5,27 +5,23 @@ import { useAppStore } from "../store";
 export const useKeyboardShortcuts = () => {
   const {
     sidebarVisible,
-    saveModalOpen,
     deleteModalOpen,
     shortcutsModalOpen,
     toggleSidebar,
-    openSaveModal,
     openDeleteModal,
     openShortcutsModal,
     closeAllModals,
     closeSidebar,
     createNote,
-    deleteNote,
     navigateNotes,
-    getCurrentNote,
   } = useAppStore();
 
   // Check if any modal is open
-  const isModalOpen = saveModalOpen || deleteModalOpen || shortcutsModalOpen;
+  const isModalOpen = deleteModalOpen || shortcutsModalOpen;
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const { key, metaKey, ctrlKey, altKey } = event;
+      const { key, metaKey, ctrlKey } = event;
       const isModKey = metaKey || ctrlKey;
 
       // Handle Escape key - close modals or sidebar
@@ -39,11 +35,14 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
-      // Handle shortcuts help (?) - when not typing in input
-      if ((key === "?" || key === "/") && !isModalOpen && !sidebarVisible) {
+      // Help is intentionally only `?`; `/` belongs to the editor's command menu.
+      if (key === "?" && !isModalOpen && !sidebarVisible) {
         const target = event.target;
         const isInput =
-          target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest?.('[contenteditable="true"]');
         if (!isInput) {
           event.preventDefault();
           openShortcutsModal();
@@ -53,6 +52,15 @@ export const useKeyboardShortcuts = () => {
 
       // Only handle mod key shortcuts below
       if (!isModKey) return;
+
+      const editingTarget =
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA" ||
+        event.target.isContentEditable ||
+        event.target.closest?.('[contenteditable="true"]');
+
+      // Let the rich editor own standard formatting shortcuts such as Cmd/Ctrl+B.
+      if (editingTarget && key.toLowerCase() === "b") return;
 
       // Block browser shortcuts and handle our shortcuts
       const blockedKeys = ["n", "s", "d", "b", "p"];
@@ -83,11 +91,10 @@ export const useKeyboardShortcuts = () => {
           createNote();
           return;
         case "s":
-          openSaveModal();
+          // Notes are persisted continuously; only suppress the browser dialog.
           return;
         case "d":
           if (!isModalOpen) {
-            const currentNote = getCurrentNote();
             // Don't allow deleting the last note
             const notes = useAppStore.getState().notes;
             if (notes.length > 1) {
@@ -113,14 +120,11 @@ export const useKeyboardShortcuts = () => {
     sidebarVisible,
     isModalOpen,
     toggleSidebar,
-    openSaveModal,
     openDeleteModal,
     openShortcutsModal,
     closeAllModals,
     closeSidebar,
     createNote,
-    deleteNote,
     navigateNotes,
-    getCurrentNote,
   ]);
 };

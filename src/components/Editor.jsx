@@ -1,81 +1,309 @@
-import React, { forwardRef, useEffect } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { Markdown } from "@tiptap/markdown";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { Placeholder } from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
 import { useAppStore } from "../store";
+import { resolveCommandMenuKey } from "../lib/commandKeyboard";
+import { looksLikeMarkdown } from "../lib/markdownPaste";
+import { PanelLeft } from "lucide-react";
+import { Button } from "./ui/button";
+import NoteTitleInput from "./editor/NoteTitleInput";
+import SlashCommandMenu from "./editor/SlashCommandMenu";
+import {
+  SLASH_COMMANDS,
+  SlashCommandFeedback,
+  slashFeedbackKey,
+} from "./editor/slashCommands";
 
-const Editor = forwardRef((props, ref) => {
-  const { getCurrentNote, updateNoteContent, sidebarVisible, toggleSidebar } =
-    useAppStore();
+const Editor = forwardRef((props, forwardedRef) => {
+  const titleRef = useRef(null);
+  const textareaRef = useRef(null);
+  const loadingNoteRef = useRef(false);
+  const slashKeyHandlerRef = useRef(null);
+  const pasteHandlerRef = useRef(null);
+  const [slashMenu, setSlashMenu] = useState(null);
+  const [selectedCommand, setSelectedCommand] = useState(0);
+  const {
+    getCurrentNote,
+    updateNoteTitle,
+    updateNoteContent,
+    updateNoteDocument,
+    sidebarVisible,
+    toggleSidebar,
+    markdownEnabled,
+  } = useAppStore();
   const note = getCurrentNote();
 
-  useEffect(() => {
-    if (ref?.current) {
-      ref.current.style.height = "auto";
-      ref.current.style.height = ref.current.scrollHeight + "px";
-      if (!sidebarVisible) {
-        ref.current.focus();
-      }
+  const updateSlashMenu = (instance) => {
+    if (!markdownEnabled || !instance.state.selection.empty) {
+      setSlashMenu(null);
+      return;
     }
-  }, [note?.id, sidebarVisible, ref]);
+    const { $from } = instance.state.selection;
+    const textBefore = $from.parent.textBetween(
+      0,
+      $from.parentOffset,
+      undefined,
+      "\ufffc",
+    );
+    const slashIndex = textBefore.lastIndexOf("/");
+    if (
+      slashIndex < 0 ||
+      (slashIndex > 0 && !/\s/.test(textBefore[slashIndex - 1]))
+    ) {
+      setSlashMenu(null);
+      return;
+    }
+    const query = textBefore.slice(slashIndex + 1);
+    if (/\s{2}|\n/.test(query)) {
+      setSlashMenu(null);
+      return;
+    }
+    setSlashMenu({
+      query: query.toLowerCase(),
+      from: $from.start() + slashIndex,
+      to: $from.pos,
+      anchor: {
+        getBoundingClientRect: () => {
+          const position = instance.view.coordsAtPos(
+            instance.state.selection.from,
+          );
+          return DOMRect.fromRect({
+            x: position.left,
+            y: position.top,
+            width: Math.max(1, position.right - position.left),
+            height: Math.max(1, position.bottom - position.top),
+          });
+        },
+      },
+    });
+  };
 
-  const handleChange = (e) => {
-    updateNoteContent(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = e.target.scrollHeight + "px";
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      TableKit.configure({
+        table: {
+          resizable: false,
+          renderWrapper: true,
+        },
+      }),
+      Placeholder.configure({
+        placeholder: "Capture a thought...",
+      }),
+      Markdown,
+      SlashCommandFeedback,
+    ],
+    content: "",
+    onUpdate: ({ editor: instance }) => {
+      if (loadingNoteRef.current) return;
+      updateNoteDocument({
+        document: instance.getJSON(),
+        markdown: instance.getMarkdown(),
+      });
+      updateSlashMenu(instance);
+    },
+    onSelectionUpdate: ({ editor: instance }) => updateSlashMenu(instance),
+    editorProps: {
+      handleKeyDown: (_view, event) =>
+        slashKeyHandlerRef.current?.(event) || false,
+      handlePaste: (_view, event) => pasteHandlerRef.current?.(event) || false,
+    },
+  });
+
+  const visibleCommands = slashMenu
+    ? SLASH_COMMANDS.filter((command) =>
+        `${command.label} ${command.keywords}`
+          .toLowerCase()
+          .includes(slashMenu.query),
+      )
+    : [];
+
+  useEffect(() => setSelectedCommand(0), [slashMenu?.query]);
+
+  const runSlashCommand = (command) => {
+    if (!editor || !slashMenu || !command) return;
+    const chain = editor
+      .chain()
+      .focus()
+      .deleteRange({ from: slashMenu.from, to: slashMenu.to });
+    command.run(chain).run();
+    setSlashMenu(null);
+  };
+
+  const handleEditorKeyDown = (event) => {
+    if (!slashMenu) return;
+    const action = resolveCommandMenuKey(
+      event,
+      selectedCommand,
+      visibleCommands.length,
+    );
+    if (action.type === "ignore") return false;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (action.type === "dismiss") {
+      editor?.view.dispatch(
+        editor.state.tr.setMeta(slashFeedbackKey, { dismiss: true }),
+      );
+      setSlashMenu(null);
+    } else if (action.type === "navigate") {
+      setSelectedCommand(action.index);
+    } else if (action.type === "select") {
+      runSlashCommand(visibleCommands[action.index]);
+    }
+
+    return true;
+  };
+
+  slashKeyHandlerRef.current = handleEditorKeyDown;
+
+  pasteHandlerRef.current = (event) => {
+    if (!markdownEnabled || !editor) return false;
+
+    const text = event.clipboardData?.getData("text/plain");
+    if (!looksLikeMarkdown(text)) return false;
+
+    event.preventDefault();
+    return editor.commands.insertContent(text, { contentType: "markdown" });
+  };
+
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      focus: () => {
+        if (markdownEnabled) editor?.commands.focus();
+        else textareaRef.current?.focus();
+      },
+    }),
+    [editor, markdownEnabled],
+  );
+
+  useEffect(() => {
+    if (!note || !editor || !markdownEnabled) return;
+    // Markdown is the persisted canonical representation. Comparing it avoids
+    // reloading Tiptap after our own JSON update, which would reset the caret
+    // in the middle of a list item while the user is typing.
+    const documentChanged = editor.getMarkdown() !== (note.content || "");
+    if (documentChanged) {
+      loadingNoteRef.current = true;
+      if (note.document) {
+        editor.commands.setContent(note.document, { emitUpdate: false });
+      } else {
+        editor.commands.setContent(note.content || "", {
+          contentType: "markdown",
+          emitUpdate: false,
+        });
+      }
+      loadingNoteRef.current = false;
+      setSlashMenu(null);
+    }
+    if (!sidebarVisible) {
+      if (!note.title.trim() && !note.content.trim()) titleRef.current?.focus();
+    }
+  }, [note?.id, editor, markdownEnabled, sidebarVisible]);
+
+  useEffect(() => {
+    if (markdownEnabled || !textareaRef.current) return;
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    if (!sidebarVisible) {
+      if (!note.title.trim() && !note.content.trim()) titleRef.current?.focus();
+    }
+  }, [note?.id, markdownEnabled, sidebarVisible]);
+
+  const handlePlainTextChange = (event) => {
+    updateNoteContent(event.target.value);
+    event.target.style.height = "auto";
+    event.target.style.height = `${event.target.scrollHeight}px`;
   };
 
   if (!note) {
     return (
-      <div className="flex-1 flex items-center justify-center text-neutral-400">
-        <p>No note selected</p>
+      <div className="flex flex-1 items-center justify-center text-neutral-400">
+        No note selected
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-neutral-50 dark:bg-[#1a1a1a]">
-      <button
+    <div className="zenpad-editor flex h-full flex-1 flex-col overflow-hidden bg-neutral-50 dark:bg-[#1a1a1a]">
+      <Button
+        variant="ghost"
+        size="icon-sm"
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-10 p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200 opacity-40 hover:opacity-100"
+        className="fixed left-4 top-4 z-20 rounded-[6px] p-1 text-neutral-400 opacity-40 transition-[color,background-color,opacity] duration-150 hover:bg-neutral-100 hover:text-neutral-600 hover:opacity-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         aria-label="Toggle sidebar"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={20}
-          height={20}
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="currentColor"
-            d="M9.367 2.25h5.266c1.092 0 1.958 0 2.655.057c.714.058 1.317.18 1.869.46a4.75 4.75 0 0 1 2.075 2.077c.281.55.403 1.154.461 1.868c.057.697.057 1.563.057 2.655v5.266c0 1.092 0 1.958-.057 2.655c-.058.714-.18 1.317-.46 1.869a4.75 4.75 0 0 1-2.076 2.075c-.552.281-1.155.403-1.869.461c-.697.057-1.563.057-2.655.057H9.367c-1.092 0-1.958 0-2.655-.057c-.714-.058-1.317-.18-1.868-.46a4.75 4.75 0 0 1-2.076-2.076c-.281-.552-.403-1.155-.461-1.869c-.057-.697-.057-1.563-.057-2.655V9.367c0-1.092 0-1.958.057-2.655c.058-.714.18-1.317.46-1.868a4.75 4.75 0 0 1 2.077-2.076c.55-.281 1.154-.403 1.868-.461c.697-.057 1.563-.057 2.655-.057M6.834 3.802c-.62.05-1.005.147-1.31.302a3.25 3.25 0 0 0-1.42 1.42c-.155.305-.251.69-.302 1.31c-.051.63-.052 1.434-.052 2.566v5.2c0 1.133 0 1.937.052 2.566c.05.62.147 1.005.302 1.31a3.25 3.25 0 0 0 1.42 1.42c.305.155.69.251 1.31.302c.392.032.851.044 1.416.05V3.752c-.565.005-1.024.017-1.416.049"
+        <PanelLeft className="size-4" strokeWidth={1.75} aria-hidden="true" />
+      </Button>
+
+      <div className="flex-1 overflow-y-auto pt-12 sm:pt-0">
+        <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8 sm:pb-8 sm:pt-16 lg:pl-10 lg:pr-0">
+          <NoteTitleInput
+            ref={titleRef}
+            value={note.title}
+            onChange={(event) => updateNoteTitle(event.target.value)}
+            onCommit={(event) => {
+              const title = event.target.value.trim();
+              if (title !== note.title) updateNoteTitle(title);
+            }}
+            onEnter={() => {
+              if (markdownEnabled) editor?.commands.focus("start");
+              else textareaRef.current?.focus();
+            }}
           />
-        </svg>
-      </button>
-      <div className="flex-1 overflow-y-auto sm:pt-0 pt-12">
-        <div className="max-w-[700px] mx-auto px-8 py-8 md:px-12 md:py-10">
-          <textarea
-            ref={ref}
-            value={note.content}
-            onChange={handleChange}
-            className="editor-textarea min-h-[calc(100vh-200px)]"
-            placeholder="Start typing..."
-            spellCheck={false}
-          />
+          {markdownEnabled ? (
+            <div>
+              <EditorContent editor={editor} className="tiptap-editor" />
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={note.content}
+              onChange={handlePlainTextChange}
+              className="editor-textarea min-h-[calc(100vh-200px)]"
+              placeholder="Capture a thought..."
+              spellCheck={false}
+            />
+          )}
         </div>
       </div>
 
-      <div className="px-8 py-3 flex items-center justify-between text-xs text-neutral-300 dark:text-neutral-700 hover:text-neutral-500 dark:hover:text-neutral-400 transition-colors duration-300 group">
-        <div className="max-w-[700px] mx-auto w-full flex items-center justify-between text-neutral-300 dark:text-neutral-700 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors duration-300">
+      <SlashCommandMenu
+        open={Boolean(slashMenu)}
+        anchor={slashMenu?.anchor}
+        commands={visibleCommands}
+        selectedIndex={selectedCommand}
+        onSelectedIndexChange={setSelectedCommand}
+        onSelect={runSlashCommand}
+        onDismiss={() => setSlashMenu(null)}
+      />
+
+      <div className="group px-5 py-3 text-xs text-neutral-300 transition-colors duration-150 hover:text-neutral-500 sm:px-8 lg:px-0 dark:text-neutral-700 dark:hover:text-neutral-400">
+        <div className="mx-auto flex w-full max-w-210 items-center justify-between">
           <div className="flex items-center gap-4">
             <span>{note.content.length} characters</span>
             <span>
-              {note.content.split(/\s+/).filter((w) => w.length > 0).length}{" "}
-              words
+              {note.content.split(/\s+/).filter(Boolean).length} words
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <span>
-              Last updated: {new Date(note.updatedAt).toLocaleTimeString()}
-            </span>
-          </div>
+          <span>
+            {markdownEnabled ? "Markdown" : "Plain text"} ·{" "}
+            {new Date(note.updatedAt).toLocaleTimeString()}
+          </span>
         </div>
       </div>
     </div>
@@ -83,5 +311,4 @@ const Editor = forwardRef((props, ref) => {
 });
 
 Editor.displayName = "Editor";
-
 export default Editor;
