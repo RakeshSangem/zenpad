@@ -48,7 +48,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-oklch(1 0 0) p-4 text-sm text-oklch(0.145 0 0) ring-1 ring-oklch(0.145 0 0)/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:bg-oklch(0.205 0 0) dark:text-oklch(0.985 0 0) dark:ring-oklch(0.985 0 0)/10",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-2xl shadow-black/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:border-[#333] dark:bg-[#222] dark:text-neutral-100 dark:shadow-black/40",
           className,
         )}
         {...props}
@@ -94,7 +94,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-oklch(0.97 0 0)/50 p-4 sm:flex-row sm:justify-end dark:bg-oklch(0.269 0 0)/50",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t border-neutral-200 bg-neutral-50 p-4 sm:flex-row sm:justify-end dark:border-neutral-700 dark:bg-neutral-800/50",
         className,
       )}
       {...props}
@@ -127,7 +127,7 @@ function DialogDescription({ className, ...props }) {
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-sm text-oklch(0.556 0 0) *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-oklch(0.145 0 0) dark:text-oklch(0.708 0 0) dark:*:[a]:hover:text-oklch(0.985 0 0)",
+        "text-sm text-neutral-500 *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-neutral-800 dark:text-neutral-400 dark:*:[a]:hover:text-neutral-100",
         className,
       )}
       {...props}

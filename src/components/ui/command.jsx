@@ -17,7 +17,7 @@ function Command({ className, ...props }) {
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-xl! bg-oklch(1 0 0) p-1 text-oklch(0.145 0 0) dark:bg-oklch(0.205 0 0) dark:text-oklch(0.985 0 0)",
+        "flex size-full flex-col overflow-hidden rounded-xl! bg-white p-1 text-neutral-800 dark:bg-[#222] dark:text-neutral-100",
         className,
       )}
       {...props}
@@ -55,11 +55,11 @@ function CommandDialog({
 function CommandInput({ className, ...props }) {
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-oklch(0.922 0 0)/30 bg-oklch(0.922 0 0)/30 shadow-none! *:data-[slot=input-group-addon]:pl-2! dark:border-oklch(1 0 0 / 15%)/30 dark:bg-oklch(1 0 0 / 15%)/30">
+      <InputGroup className="h-9! rounded-lg! border-neutral-200 bg-neutral-50 shadow-none! *:data-[slot=input-group-addon]:pl-2! dark:border-neutral-700 dark:bg-neutral-800/60">
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
-            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+            "w-full text-sm text-neutral-800 outline-hidden placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-neutral-100 dark:placeholder:text-neutral-500",
             className,
           )}
           {...props}
@@ -89,7 +89,7 @@ function CommandEmpty({ className, ...props }) {
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-6 text-center text-sm", className)}
+      className={cn("py-8 text-center text-sm text-neutral-400 dark:text-neutral-500", className)}
       {...props}
     />
   );
@@ -100,7 +100,7 @@ function CommandGroup({ className, ...props }) {
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden p-1 text-oklch(0.145 0 0) **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-oklch(0.556 0 0) dark:text-oklch(0.985 0 0) dark:**:[[cmdk-group-heading]]:text-oklch(0.708 0 0)",
+        "overflow-hidden p-1 text-neutral-800 **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-neutral-500 dark:text-neutral-100 dark:**:[[cmdk-group-heading]]:text-neutral-400",
         className,
       )}
       {...props}
@@ -113,7 +113,7 @@ function CommandSeparator({ className, ...props }) {
     <CommandPrimitive.Separator
       data-slot="command-separator"
       className={cn(
-        "-mx-1 h-px bg-oklch(0.922 0 0) dark:bg-oklch(1 0 0 / 10%)",
+        "-mx-1 h-px bg-neutral-200 dark:bg-neutral-700",
         className,
       )}
       {...props}
@@ -126,7 +126,7 @@ function CommandItem({ className, children, ...props }) {
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-oklch(0.97 0 0) data-selected:text-oklch(0.145 0 0) [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-oklch(0.145 0 0) dark:data-selected:bg-oklch(0.269 0 0) dark:data-selected:text-oklch(0.985 0 0) dark:data-selected:*:[svg]:text-oklch(0.985 0 0)",
+        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-neutral-100 data-selected:text-neutral-900 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg]:text-neutral-500 dark:data-selected:bg-neutral-800 dark:data-selected:text-neutral-100 dark:[&_svg]:text-neutral-400",
         className,
       )}
       {...props}
@@ -142,7 +142,7 @@ function CommandShortcut({ className, ...props }) {
     <span
       data-slot="command-shortcut"
       className={cn(
-        "ml-auto text-xs tracking-widest text-oklch(0.556 0 0) group-data-selected/command-item:text-oklch(0.145 0 0) dark:text-oklch(0.708 0 0) dark:group-data-selected/command-item:text-oklch(0.985 0 0)",
+        "ml-auto text-xs tracking-widest text-neutral-400 dark:text-neutral-500",
         className,
       )}
       {...props}

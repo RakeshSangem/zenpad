@@ -1,15 +1,23 @@
 import { useEffect } from "react";
 import { useAppStore } from "../store";
 
+const isEditingTarget = (target) =>
+  target?.tagName === "INPUT" ||
+  target?.tagName === "TEXTAREA" ||
+  target?.isContentEditable ||
+  Boolean(target?.closest?.('[contenteditable="true"]'));
+
 // Custom hook for global keyboard shortcuts
 export const useKeyboardShortcuts = () => {
   const {
     sidebarVisible,
     deleteModalOpen,
     shortcutsModalOpen,
+    quickSwitcherOpen,
     toggleSidebar,
     openDeleteModal,
     openShortcutsModal,
+    openQuickSwitcher,
     closeAllModals,
     closeSidebar,
     createNote,
@@ -17,62 +25,42 @@ export const useKeyboardShortcuts = () => {
   } = useAppStore();
 
   // Check if any modal is open
-  const isModalOpen = deleteModalOpen || shortcutsModalOpen;
+  const isModalOpen = deleteModalOpen || shortcutsModalOpen || quickSwitcherOpen;
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const { key, metaKey, ctrlKey } = event;
+      const { key, metaKey, ctrlKey, altKey } = event;
       const isModKey = metaKey || ctrlKey;
 
       // Handle Escape key - close modals or sidebar
       if (key === "Escape") {
-        event.preventDefault();
         if (isModalOpen) {
+          event.preventDefault();
           closeAllModals();
         } else if (sidebarVisible) {
+          event.preventDefault();
           closeSidebar();
         }
         return;
       }
 
-      // Help is intentionally only `?`; `/` belongs to the editor's command menu.
+      // Help is also on `?`, which only works outside a text field; Cmd+/ below
+      // covers the case where you are mid-sentence.
       if (key === "?" && !isModalOpen && !sidebarVisible) {
-        const target = event.target;
-        const isInput =
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable ||
-          target.closest?.('[contenteditable="true"]');
-        if (!isInput) {
+        if (!isEditingTarget(event.target)) {
           event.preventDefault();
           openShortcutsModal();
-          return;
         }
+        return;
       }
 
       // Only handle mod key shortcuts below
       if (!isModKey) return;
 
-      const editingTarget =
-        event.target.tagName === "INPUT" ||
-        event.target.tagName === "TEXTAREA" ||
-        event.target.isContentEditable ||
-        event.target.closest?.('[contenteditable="true"]');
-
-      // Let the rich editor own standard formatting shortcuts such as Cmd/Ctrl+B.
-      if (editingTarget && key.toLowerCase() === "b") return;
-
-      // Block browser shortcuts and handle our shortcuts
-      const blockedKeys = ["n", "s", "d", "b", "p"];
-      if (blockedKeys.includes(key.toLowerCase())) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
       // Cmd/Ctrl+Arrow belongs to the caret — on macOS it jumps to the start or
-      // end of the text being edited. Note navigation takes the Alt variant so
+      // end of what you are editing. Note navigation takes the Alt variant so
       // both work while typing.
-      if (!sidebarVisible && !isModalOpen && event.altKey) {
+      if (altKey && !sidebarVisible && !isModalOpen) {
         if (key === "ArrowUp") {
           event.preventDefault();
           event.stopPropagation();
@@ -87,30 +75,56 @@ export const useKeyboardShortcuts = () => {
         }
       }
 
-      // Handle shortcuts
-      switch (key.toLowerCase()) {
+      // Delete the current note. Cmd+Backspace reads as "delete" and, unlike
+      // Cmd+D, is not the browser's bookmark shortcut.
+      if (key === "Backspace" && !isModalOpen) {
+        event.preventDefault();
+        if (useAppStore.getState().notes.length > 1) openDeleteModal();
+        return;
+      }
+
+      // Holding Option on macOS rewrites event.key (Option+N is a dead key for
+      // the tilde), so fall back to the physical key when Alt is down.
+      const physicalKey = { KeyN: "n", KeyK: "k", KeyS: "s", KeyP: "p" }[
+        event.code
+      ];
+      switch (altKey && physicalKey ? physicalKey : key.toLowerCase()) {
+        case "k":
+          // Search notes by name — the only shortcut that scales past a
+          // handful of notes.
+          event.preventDefault();
+          event.stopPropagation();
+          if (!isModalOpen) openQuickSwitcher();
+          return;
+        case "\\":
+          // Sidebar lives here rather than on Cmd+B, which the editor needs
+          // for bold while you are typing.
+          event.preventDefault();
+          event.stopPropagation();
+          if (!isModalOpen) toggleSidebar();
+          return;
+        case "/":
+          event.preventDefault();
+          event.stopPropagation();
+          if (!isModalOpen) openShortcutsModal();
+          return;
         case "n":
-          createNote();
+          // Cmd+Alt+N is the documented one: browsers reserve plain Cmd+N for a
+          // new window and a page cannot always take it back. Plain Cmd+N is
+          // still handled, and does work in the installed app.
+          event.preventDefault();
+          event.stopPropagation();
+          if (!isModalOpen) createNote();
           return;
         case "s":
           // Notes are persisted continuously; only suppress the browser dialog.
-          return;
-        case "d":
-          if (!isModalOpen) {
-            // Don't allow deleting the last note
-            const notes = useAppStore.getState().notes;
-            if (notes.length > 1) {
-              openDeleteModal();
-            }
-          }
-          return;
-        case "b":
-          if (!isModalOpen) {
-            toggleSidebar();
-          }
+          event.preventDefault();
+          event.stopPropagation();
           return;
         case "p":
           // Block print dialog
+          event.preventDefault();
+          event.stopPropagation();
           return;
       }
     };
@@ -124,6 +138,7 @@ export const useKeyboardShortcuts = () => {
     toggleSidebar,
     openDeleteModal,
     openShortcutsModal,
+    openQuickSwitcher,
     closeAllModals,
     closeSidebar,
     createNote,

@@ -111,6 +111,7 @@ export const useAppStore = create((set, get) => ({
   sidebarVisible: false,
   deleteModalOpen: false,
   shortcutsModalOpen: false,
+  quickSwitcherOpen: false,
   authModalOpen: false,
 
   isAuthenticated: false,
@@ -369,6 +370,8 @@ export const useAppStore = create((set, get) => ({
   closeSidebar: () => set({ sidebarVisible: false }),
   openDeleteModal: () => set({ deleteModalOpen: true }),
   closeDeleteModal: () => set({ deleteModalOpen: false }),
+  openQuickSwitcher: () => set({ quickSwitcherOpen: true }),
+  closeQuickSwitcher: () => set({ quickSwitcherOpen: false }),
   openShortcutsModal: () => set({ shortcutsModalOpen: true }),
   closeShortcutsModal: () => set({ shortcutsModalOpen: false }),
   openAuthModal: () => set({ authModalOpen: true }),
@@ -378,6 +381,7 @@ export const useAppStore = create((set, get) => ({
       deleteModalOpen: false,
       shortcutsModalOpen: false,
       authModalOpen: false,
+      quickSwitcherOpen: false,
     }),
 
   login: async (credentials) => {

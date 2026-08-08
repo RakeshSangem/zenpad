@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import Sidebar from "./components/Sidebar";
 import Editor from "./components/Editor";
+import QuickSwitcher from "./components/QuickSwitcher";
 import PWAUpdateBanner from "./components/PWAUpdateBanner";
 import AuthLayout from "./components/auth/AuthLayout";
 import Logo from "./components/Logo";
@@ -9,6 +10,7 @@ import { useAppStore } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useSyncNotes } from "./hooks/useSyncNotes";
 import { Button } from "./components/ui/button";
+import { Kbd, KbdGroup } from "./components/ui/kbd";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +25,37 @@ const shouldLoadAnalytics =
   typeof window !== "undefined" &&
   window.location.hostname !== "localhost" &&
   window.location.hostname !== "127.0.0.1";
+
+
+// Shown in the help dialog. Cmd is rendered for every platform because the
+// bindings are mod-key based; Ctrl users read it the same way.
+const SHORTCUT_SECTIONS = [
+  {
+    title: "Notes",
+    items: [
+      { label: "Search notes", keys: ["⌘ K"] },
+      { label: "New note", keys: ["⌘ ⌥ N"] },
+      { label: "Delete note", keys: ["⌘ ⌫"] },
+      { label: "Previous / next note", keys: ["⌘ ⌥ ↑ ↓"] },
+    ],
+  },
+  {
+    title: "Navigation",
+    items: [
+      { label: "Toggle sidebar", keys: ["⌘ \\"] },
+      { label: "Top / bottom of note", keys: ["⌘ ↑ ↓"] },
+      { label: "Close dialog or sidebar", keys: ["Esc"] },
+    ],
+  },
+  {
+    title: "Writing",
+    items: [
+      { label: "Insert block", keys: ["/"] },
+      { label: "Bold / italic / underline", keys: ["⌘ B", "⌘ I", "⌘ U"] },
+      { label: "Show shortcuts", keys: ["⌘ /", "?"] },
+    ],
+  },
+];
 
 function AuthenticatedApp() {
   const editorRef = useRef(null);
@@ -56,6 +89,8 @@ function AuthenticatedApp() {
     <div className="h-full w-full flex bg-neutral-50 dark:bg-[#1a1a1a] animate-fade-in">
       <Sidebar onSelectNote={handleSelectNote} />
       <Editor ref={editorRef} />
+
+      <QuickSwitcher onSelectNote={handleSelectNote} />
 
       {shouldLoadAnalytics && <Analytics />}
 
@@ -149,71 +184,36 @@ function AuthenticatedApp() {
             </Button>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                New Note
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Cmd/Ctrl + N
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Delete Note
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Cmd/Ctrl + D
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Toggle Sidebar (outside editor)
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Cmd/Ctrl + B
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Navigate Notes
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Cmd/Ctrl + Alt + ↑/↓
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Top / bottom of note
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Cmd/Ctrl + ↑/↓
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Blur Editor / Close
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                Esc
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Insert block (Markdown mode)
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                /
-              </kbd>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-neutral-600 dark:text-neutral-400">
-                Show Shortcuts
-              </span>
-              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
-                ?
-              </kbd>
-            </div>
+          <div className="text-sm">
+            {SHORTCUT_SECTIONS.map((section) => (
+              <div key={section.title} className="mb-4 last:mb-0">
+                <p className="mb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                  {section.title}
+                </p>
+                {section.items.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between gap-4 py-1.5"
+                  >
+                    <span className="text-neutral-600 dark:text-neutral-400">
+                      {item.label}
+                    </span>
+                    <KbdGroup className="shrink-0">
+                      {item.keys.map((keyLabel, index) => (
+                        <React.Fragment key={keyLabel}>
+                          {index > 0 && (
+                            <span className="text-xs text-neutral-300 dark:text-neutral-600">
+                              or
+                            </span>
+                          )}
+                          <Kbd>{keyLabel}</Kbd>
+                        </React.Fragment>
+                      ))}
+                    </KbdGroup>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
 
           <p className="mt-6 text-xs text-neutral-400 dark:text-neutral-500">
