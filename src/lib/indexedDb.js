@@ -76,30 +76,3 @@ export const getSyncQueue = () =>
   run(STORES.syncQueue, "readonly", (store) => store.getAll());
 export const removeSyncOperation = (operationId) =>
   run(STORES.syncQueue, "readwrite", (store) => store.delete(operationId));
-
-// One-time preservation of notes created before IndexedDB was introduced.
-export async function migrateLegacyLocalStorage() {
-  const raw = localStorage.getItem("zenpad-storage");
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw);
-    const legacy = parsed?.state ?? parsed;
-    const existing = await getAllNotes();
-    if (existing.length === 0 && Array.isArray(legacy?.notes)) {
-      await Promise.all(
-        legacy.notes.map((note) =>
-          putNote({
-            ...note,
-            document: note.document ?? null,
-            formatVersion: note.formatVersion ?? 1,
-          }),
-        ),
-      );
-      if (legacy.currentNoteId)
-        await putMetadata("currentNoteId", legacy.currentNoteId);
-    }
-    localStorage.removeItem("zenpad-storage");
-  } catch (error) {
-    console.error("[storage] localStorage migration failed", error);
-  }
-}

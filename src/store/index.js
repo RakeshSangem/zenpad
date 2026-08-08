@@ -2,13 +2,12 @@ import { create } from "zustand";
 import {
   getAllNotes,
   getMetadata,
-  getSetting,
-  migrateLegacyLocalStorage,
   putMetadata,
   putNote,
   putSetting,
   removeNote,
 } from "../lib/indexedDb";
+import { migrateLegacyLocalStorage } from "../lib/legacyMigration";
 import {
   signIn,
   signUp,
@@ -65,7 +64,7 @@ export const useAppStore = create((set, get) => ({
   pendingDeletes: [],
   currentNoteId: initialNote.id,
   storageReady: false,
-  markdownEnabled: false,
+  markdownEnabled: true,
   syncAccountId: null,
 
   sidebarVisible: false,
@@ -91,7 +90,9 @@ export const useAppStore = create((set, get) => ({
     const currentNoteId = notes.some((note) => note.id === requestedId)
       ? requestedId
       : notes[0].id;
-    const markdownEnabled = await getSetting("markdownEnabled", false);
+    // Markdown is the only editor mode for now. The setting actions remain
+    // available for the future settings screen.
+    const markdownEnabled = true;
     const syncAccountId = await getMetadata("syncAccountId", null);
     set({
       notes,

@@ -10,15 +10,6 @@ import { useAppStore } from "../store";
 import Logo from "./Logo";
 import AccountMenu from "./AccountMenu";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 // Format date for display
 const formatDate = (isoString) => {
@@ -74,8 +65,6 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
     closeSidebar,
     toggleSidebar,
     openShortcutsModal,
-    markdownEnabled,
-    toggleMarkdown,
   } = useAppStore();
 
   const sortedNotes = useMemo(() => {
@@ -272,37 +261,7 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           <AccountMenu />
 
           {/* Footer hint */}
-          <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f] flex items-center justify-between gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-md px-2 py-1 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200">
-                Markdown {markdownEnabled ? "on" : "off"}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="start"
-                sideOffset={8}
-                className="w-48"
-              >
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Editor mode</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    value={markdownEnabled ? "markdown" : "plain"}
-                    onValueChange={(value) => {
-                      const shouldEnableMarkdown = value === "markdown";
-                      if (shouldEnableMarkdown !== markdownEnabled)
-                        toggleMarkdown();
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="plain">
-                      Plain text
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="markdown">
-                      Markdown
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f] flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
                 ⌘B
