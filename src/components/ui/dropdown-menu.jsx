@@ -4,6 +4,18 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon, CheckIcon } from "lucide-react";
 
+const SURFACE =
+  "rounded-[12px] border border-neutral-200 bg-white p-1.5 text-neutral-800 shadow-xl shadow-black/10 dark:border-[#333] dark:bg-[#222] dark:text-neutral-100 dark:shadow-black/40";
+
+const ITEM =
+  "relative flex h-8 cursor-default items-center gap-2 rounded-[8px] px-2 text-sm text-neutral-700 outline-hidden select-none data-inset:pl-7 focus:bg-neutral-100 focus:text-neutral-900 data-highlighted:bg-neutral-100 data-highlighted:text-neutral-900 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:text-neutral-500 [&_svg:not([class*='size-'])]:size-4 dark:text-neutral-300 dark:focus:bg-neutral-800 dark:focus:text-neutral-100 dark:data-highlighted:bg-neutral-800 dark:data-highlighted:text-neutral-100 dark:[&_svg]:text-neutral-400";
+
+const DESTRUCTIVE =
+  "data-[variant=destructive]:text-red-600 data-[variant=destructive]:focus:bg-red-50 data-[variant=destructive]:data-highlighted:bg-red-50 data-[variant=destructive]:[&_svg]:text-red-600 dark:data-[variant=destructive]:text-red-400 dark:data-[variant=destructive]:focus:bg-red-500/10 dark:data-[variant=destructive]:data-highlighted:bg-red-500/10 dark:data-[variant=destructive]:[&_svg]:text-red-400";
+
+const MOTION =
+  "duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
+
 function DropdownMenu({ ...props }) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
@@ -36,7 +48,9 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-oklch(1 0 0) p-1 text-oklch(0.145 0 0) shadow-md ring-1 ring-oklch(0.145 0 0)/10 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95 dark:bg-oklch(0.205 0 0) dark:text-oklch(0.985 0 0) dark:ring-oklch(0.985 0 0)/10",
+            "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto outline-none",
+            SURFACE,
+            MOTION,
             className,
           )}
           {...props}
@@ -56,7 +70,7 @@ function DropdownMenuLabel({ className, inset, ...props }) {
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
-        "px-1.5 py-1 text-xs font-medium text-oklch(0.556 0 0) data-inset:pl-7 dark:text-oklch(0.708 0 0)",
+        "px-2 py-1 text-xs font-medium text-neutral-500 data-inset:pl-7 dark:text-neutral-400",
         className,
       )}
       {...props}
@@ -71,7 +85,9 @@ function DropdownMenuItem({ className, inset, variant = "default", ...props }) {
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) not-data-[variant=destructive]:focus:**:text-oklch(0.205 0 0) data-inset:pl-7 data-[variant=destructive]:text-oklch(0.577 0.245 27.325) data-[variant=destructive]:focus:bg-oklch(0.577 0.245 27.325)/10 data-[variant=destructive]:focus:text-oklch(0.577 0.245 27.325) dark:data-[variant=destructive]:focus:bg-oklch(0.577 0.245 27.325)/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-oklch(0.577 0.245 27.325) dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:not-data-[variant=destructive]:focus:**:text-oklch(0.985 0 0) dark:data-[variant=destructive]:text-oklch(0.704 0.191 22.216) dark:data-[variant=destructive]:focus:bg-oklch(0.704 0.191 22.216)/10 dark:data-[variant=destructive]:focus:text-oklch(0.704 0.191 22.216) dark:dark:data-[variant=destructive]:focus:bg-oklch(0.704 0.191 22.216)/20 dark:data-[variant=destructive]:*:[svg]:text-oklch(0.704 0.191 22.216)",
+        "group/dropdown-menu-item",
+        ITEM,
+        DESTRUCTIVE,
         className,
       )}
       {...props}
@@ -89,32 +105,30 @@ function DropdownMenuSubTrigger({ className, inset, children, ...props }) {
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) not-data-[variant=destructive]:focus:**:text-oklch(0.205 0 0) data-inset:pl-7 data-popup-open:bg-oklch(0.97 0 0) data-popup-open:text-oklch(0.205 0 0) data-open:bg-oklch(0.97 0 0) data-open:text-oklch(0.205 0 0) [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:not-data-[variant=destructive]:focus:**:text-oklch(0.985 0 0) dark:data-popup-open:bg-oklch(0.269 0 0) dark:data-popup-open:text-oklch(0.985 0 0) dark:data-open:bg-oklch(0.269 0 0) dark:data-open:text-oklch(0.985 0 0)",
+        ITEM,
+        "data-popup-open:bg-neutral-100 data-popup-open:text-neutral-900 dark:data-popup-open:bg-neutral-800 dark:data-popup-open:text-neutral-100",
         className,
       )}
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto" />
+      <ChevronRightIcon className="ml-auto size-3.5" />
     </MenuPrimitive.SubmenuTrigger>
   );
 }
 
 function DropdownMenuSubContent({
   align = "start",
-  alignOffset = -3,
+  alignOffset = -7,
   side = "right",
-  sideOffset = 0,
+  sideOffset = 4,
   className,
   ...props
 }) {
   return (
     <DropdownMenuContent
       data-slot="dropdown-menu-sub-content"
-      className={cn(
-        "w-auto min-w-[96px] rounded-lg bg-oklch(1 0 0) p-1 text-oklch(0.145 0 0) shadow-lg ring-1 ring-oklch(0.145 0 0)/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:bg-oklch(0.205 0 0) dark:text-oklch(0.985 0 0) dark:ring-oklch(0.985 0 0)/10",
-        className,
-      )}
+      className={cn("w-48", className)}
       align={align}
       alignOffset={alignOffset}
       side={side}
@@ -135,10 +149,7 @@ function DropdownMenuCheckboxItem({
     <MenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) focus:**:text-oklch(0.205 0 0) data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:focus:**:text-oklch(0.985 0 0)",
-        className,
-      )}
+      className={cn(ITEM, "pr-8", className)}
       checked={checked}
       {...props}
     >
@@ -169,10 +180,7 @@ function DropdownMenuRadioItem({ className, children, inset, ...props }) {
     <MenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) focus:**:text-oklch(0.205 0 0) data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:focus:**:text-oklch(0.985 0 0)",
-        className,
-      )}
+      className={cn(ITEM, "pr-8", className)}
       {...props}
     >
       <span
@@ -193,7 +201,7 @@ function DropdownMenuSeparator({ className, ...props }) {
     <MenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
       className={cn(
-        "-mx-1 my-1 h-px bg-oklch(0.922 0 0) dark:bg-oklch(1 0 0 / 10%)",
+        "-mx-1.5 my-1 h-px bg-neutral-200 dark:bg-neutral-700",
         className,
       )}
       {...props}
@@ -206,7 +214,7 @@ function DropdownMenuShortcut({ className, ...props }) {
     <span
       data-slot="dropdown-menu-shortcut"
       className={cn(
-        "ml-auto text-xs tracking-widest text-oklch(0.556 0 0) group-focus/dropdown-menu-item:text-oklch(0.205 0 0) dark:text-oklch(0.708 0 0) dark:group-focus/dropdown-menu-item:text-oklch(0.985 0 0)",
+        "ml-auto text-xs tracking-widest text-neutral-400 dark:text-neutral-500",
         className,
       )}
       {...props}
