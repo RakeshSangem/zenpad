@@ -1,5 +1,6 @@
 import React from "react";
 import { usePWAUpdate } from "../hooks/usePWAUpdate";
+import { Button } from "./ui/button";
 
 function PWAUpdateBanner() {
   const { needRefresh, updateServiceWorker, dismissPrompt } = usePWAUpdate();
@@ -19,10 +20,12 @@ function PWAUpdateBanner() {
             A newer version is ready. Reload to apply it.
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           onClick={dismissPrompt}
-            className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+          className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
           aria-label="Dismiss update banner"
         >
           <svg
@@ -38,24 +41,25 @@ function PWAUpdateBanner() {
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       <div className="mt-2 flex items-center gap-1.5">
-        <button
+        <Button
           type="button"
           onClick={() => updateServiceWorker()}
           className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
         >
           Reload now
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-            onClick={dismissPrompt}
-            className="rounded-md border border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900 dark:border-[#2a2a2a] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-          >
-            Dismiss
-          </button>
+          variant="outline"
+          onClick={dismissPrompt}
+          className="rounded-md border border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900 dark:border-[#2a2a2a] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+        >
+          Dismiss
+        </Button>
       </div>
     </div>
   );

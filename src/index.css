@@ -1,23 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@source "../index.html";
+@source "./**/*.{js,ts,jsx,tsx}";
 
 @layer base {
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    @apply border-border outline-ring/50;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
     width: 100%;
   }
 
   body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    @apply bg-background text-foreground;
   }
 
   /* Light mode */
@@ -78,14 +94,109 @@
       color: white;
     }
   }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
 }
 
 @layer components {
+  [data-slot="dialog-overlay"] {
+    background-color: rgb(0 0 0 / 0.5);
+    backdrop-filter: none;
+  }
+
+  .zenpad-slash-menu .slash-command-list {
+    scrollbar-color: #a3a3a3 transparent;
+    scrollbar-width: thin;
+  }
+
+  .zenpad-slash-menu .slash-command-list::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+  }
+
+  .zenpad-slash-menu .slash-command-list::-webkit-scrollbar-thumb {
+    background: #a3a3a3;
+    border-radius: 9999px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .zenpad-slash-menu .slash-command-list {
+      scrollbar-color: #525252 transparent;
+    }
+
+    .zenpad-slash-menu .slash-command-list::-webkit-scrollbar-thumb {
+      background: #525252;
+    }
+  }
+
   .editor-textarea {
     @apply w-full h-full resize-none border-none outline-none bg-transparent leading-relaxed;
-    font-size: 18px;
-    line-height: 1.8;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+      "Inter Variable",
+      Inter,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-feature-settings:
+      "cv01" 1,
+      "ss03" 1,
+      "zero" 1;
+    font-size: 15px;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+    line-height: 1.65;
+  }
+
+  .note-title-input {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #262626;
+    font-size: 22px !important;
+    font-weight: 590;
+    height: auto;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+    outline: none !important;
+    padding: 0 !important;
+  }
+
+  .note-title-input::placeholder {
+    color: #a3a3a3;
+    opacity: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .note-title-input {
+      color: #e5e5e5;
+    }
+
+    .note-title-input::placeholder {
+      color: #737373;
+    }
+  }
+
+  .zenpad-editor {
+    font-family:
+      "Inter Variable",
+      Inter,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-feature-settings:
+      "cv01" 1,
+      "ss03" 1,
+      "zero" 1;
   }
 
   @media (prefers-color-scheme: light) {
@@ -102,6 +213,309 @@
 
   .editor-textarea:focus {
     @apply outline-none;
+  }
+
+  .tiptap-editor .tiptap {
+    @apply min-h-[calc(100vh-240px)] outline-none;
+    color: #262626;
+    font-size: 15px;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+    line-height: 1.65;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap {
+      color: #e5e5e5;
+    }
+  }
+
+  .tiptap-editor .tiptap > * + * {
+    margin-top: 16px;
+  }
+
+  .tiptap-editor .tiptap strong,
+  .tiptap-editor .tiptap b {
+    font-weight: 600;
+  }
+
+  .tiptap-editor .tiptap h1 {
+    font-size: 22px;
+    font-weight: 590;
+    letter-spacing: -0.022em;
+    line-height: 1.13;
+  }
+
+  .tiptap-editor .tiptap h2 {
+    font-size: 19px;
+    font-weight: 590;
+    letter-spacing: -0.012em;
+    line-height: 1.33;
+  }
+
+  .tiptap-editor .tiptap h3 {
+    font-size: 17px;
+    font-weight: 590;
+    letter-spacing: -0.012em;
+    line-height: 1.33;
+  }
+
+  .tiptap-editor .tiptap ul {
+    @apply pl-6;
+    list-style: none;
+  }
+
+  .tiptap-editor .tiptap ol {
+    @apply list-decimal pl-6;
+  }
+
+  .tiptap-editor .tiptap ul:not([data-type="taskList"]) li {
+    position: relative;
+  }
+
+  .tiptap-editor .tiptap ul:not([data-type="taskList"]) > li::before {
+    background: currentColor;
+    border-radius: 9999px;
+    content: "";
+    height: 6px;
+    left: -1.25rem;
+    position: absolute;
+    top: 0.55em;
+    width: 6px;
+  }
+
+  .tiptap-editor .tiptap ul:not([data-type="taskList"]) ul > li::before {
+    background: transparent;
+    border: 1.5px solid #737373;
+    box-sizing: border-box;
+    height: 7px;
+    width: 7px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap ul:not([data-type="taskList"]) ul > li::before {
+      border-color: #a3a3a3;
+    }
+  }
+
+  .tiptap-editor .tiptap ul:not([data-type="taskList"]) ul ul > li::before {
+    background: currentColor;
+    border: 0;
+    border-radius: 2px;
+  }
+
+  .tiptap-editor .tiptap .tableWrapper {
+    border: 1px solid #d4d4d4;
+    border-radius: 6px;
+    margin: 1em 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .tiptap-editor .tiptap table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .tiptap-editor .tiptap th,
+  .tiptap-editor .tiptap td {
+    border: 0;
+    border-bottom: 1px solid #d4d4d4;
+    border-right: 1px solid #d4d4d4;
+    line-height: 1.45;
+    min-width: 80px;
+    overflow-wrap: anywhere;
+    padding: 7px 9px;
+    position: relative;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .tiptap-editor .tiptap th {
+    background: #eeeeef;
+    font-weight: 590;
+  }
+
+  .tiptap-editor .tiptap tr > :last-child {
+    border-right: 0;
+  }
+
+  .tiptap-editor .tiptap tr:last-child > * {
+    border-bottom: 0;
+  }
+
+  .tiptap-editor .tiptap th > p,
+  .tiptap-editor .tiptap td > p {
+    margin: 0;
+  }
+
+  .tiptap-editor .tiptap .selectedCell::after {
+    background: rgb(163 163 163 / 0.18);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap .tableWrapper {
+      border-color: #404040;
+    }
+
+    .tiptap-editor .tiptap th,
+    .tiptap-editor .tiptap td {
+      border-color: #404040;
+    }
+
+    .tiptap-editor .tiptap th {
+      background: #262626;
+    }
+
+    .tiptap-editor .tiptap .selectedCell::after {
+      background: rgb(163 163 163 / 0.12);
+    }
+  }
+
+  .tiptap-editor .tiptap li > p {
+    margin: 0;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] {
+    @apply list-none pl-0;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] li {
+    @apply flex items-start;
+    gap: 10px;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] li + li {
+    margin-top: 6px;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] li > label {
+    align-items: center;
+    align-self: flex-start;
+    display: flex;
+    flex: 0 0 auto;
+    height: 1.65em;
+    margin: 0;
+    user-select: none;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] input[type="checkbox"] {
+    appearance: none;
+    background: transparent;
+    border: 1.25px solid #737373;
+    border-radius: 3px;
+    cursor: pointer;
+    display: grid;
+    flex: 0 0 auto;
+    height: 14px;
+    margin: 0;
+    place-content: center;
+    width: 14px;
+  }
+
+  .tiptap-editor
+    .tiptap
+    ul[data-type="taskList"]
+    input[type="checkbox"]::before {
+    border-bottom: 1.25px solid white;
+    border-left: 1.25px solid white;
+    content: "";
+    height: 3.5px;
+    transform: translateY(-1px) rotate(-45deg) scale(0);
+    width: 6px;
+  }
+
+  .tiptap-editor
+    .tiptap
+    ul[data-type="taskList"]
+    input[type="checkbox"]:checked {
+    background: #404040;
+    border-color: #404040;
+  }
+
+  .tiptap-editor
+    .tiptap
+    ul[data-type="taskList"]
+    input[type="checkbox"]:checked::before {
+    transform: translateY(-1px) rotate(-45deg) scale(1);
+  }
+
+  .tiptap-editor
+    .tiptap
+    ul[data-type="taskList"]
+    input[type="checkbox"]:focus-visible {
+    outline: 2px solid #737373;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap ul[data-type="taskList"] input[type="checkbox"] {
+      border-color: #737373;
+    }
+
+    .tiptap-editor
+      .tiptap
+      ul[data-type="taskList"]
+      input[type="checkbox"]:checked {
+      background: #d4d4d4;
+      border-color: #d4d4d4;
+    }
+
+    .tiptap-editor
+      .tiptap
+      ul[data-type="taskList"]
+      input[type="checkbox"]:checked::before {
+      border-color: #262626;
+    }
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] li > div {
+    @apply min-w-0 flex-1;
+  }
+
+  .tiptap-editor .tiptap blockquote {
+    @apply border-l-2 border-neutral-300 pl-4 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400;
+  }
+
+  .tiptap-editor .tiptap code {
+    @apply rounded bg-neutral-200 px-1 py-0.5 font-mono text-[0.9em] dark:bg-neutral-800;
+  }
+
+  .tiptap-editor .tiptap pre {
+    @apply overflow-x-auto rounded-xl bg-neutral-900 p-4 text-neutral-100;
+  }
+
+  .tiptap-editor .tiptap pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  .tiptap-editor .tiptap hr {
+    @apply my-6 border-0 border-t border-neutral-300 dark:border-neutral-700;
+  }
+
+  .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-neutral-400 dark:text-neutral-600;
+    content: "Capture a thought...";
+  }
+
+  .tiptap-editor .slash-command-token {
+    border-radius: 3px;
+    background: #e5e5e5;
+    box-shadow: 0 0 0 2px #e5e5e5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .slash-command-token {
+      background: #404040;
+      box-shadow: 0 0 0 2px #404040;
+    }
   }
 
   .note-item {
@@ -147,5 +561,229 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Smooth auth entrance: blur + opacity + lift + tiny scale */
+  @keyframes auth-rise {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(12px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-4px);
+    }
+    40%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  @keyframes popover-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-popover-up {
+    animation: popover-up 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: bottom center;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out both;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.35s ease-out both;
+  }
+
+  .animate-fade-in-down {
+    animation: fade-in-down 0.25s ease-out both;
+  }
+
+  /* Entry animation for auth — apply with inline animationDelay for stagger */
+  .animate-auth-rise {
+    animation: auth-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, filter, opacity;
+  }
+
+  .animate-shake {
+    animation: shake 0.35s ease-in-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-auth-rise,
+    .animate-fade-in,
+    .animate-fade-in-up,
+    .animate-fade-in-down,
+    .animate-popover-up,
+    .animate-shake {
+      animation: none !important;
+    }
+  }
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
   }
 }
