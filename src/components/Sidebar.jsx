@@ -7,6 +7,8 @@ import React, {
   useMemo,
 } from "react";
 import { useAppStore } from "../store";
+import { noteTitle, notePreview } from "../lib/noteSummary";
+import { shortcutLabel } from "../lib/platform";
 import Logo from "./Logo";
 import AccountMenu from "./AccountMenu";
 import { Button } from "./ui/button";
@@ -35,24 +37,6 @@ const formatDate = (isoString) => {
     month: "short",
     day: "numeric",
   });
-};
-
-// Extract title from note - use custom title if set, otherwise extract from content
-const extractTitle = (note) => {
-  // Use custom title if it exists and is not empty
-  if (note.title && note.title.trim()) {
-    return note.title.trim().slice(0, 50);
-  }
-
-  // Fall back to extracting from content
-  const content = note.content;
-  if (!content) return "Untitled";
-  const lines = content.split("\n");
-  const firstLine = lines[0].trim();
-  if (firstLine) return firstLine.slice(0, 50);
-  // If first line is empty, try second line
-  if (lines[1]) return lines[1].trim().slice(0, 50);
-  return "Untitled";
 };
 
 const Sidebar = forwardRef(({ onSelectNote }, ref) => {
@@ -133,8 +117,8 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           event.preventDefault();
           closeSidebar();
           break;
-        case "b":
-        case "B":
+        case "\\":
+          // Matches the global sidebar toggle; Mod+B belongs to bold.
           if (isModKey) {
             event.preventDefault();
             event.stopPropagation();
@@ -219,13 +203,8 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           <div className="flex-1 overflow-y-auto">
             {sortedNotes.map((note, index) => {
               const isActive = note.id === currentNoteId;
-              const title = extractTitle(note);
-              const preview = note.content
-                .split("\n")
-                .slice(1)
-                .join(" ")
-                .trim()
-                .slice(0, 60);
+              const title = noteTitle(note);
+              const preview = notePreview(note);
 
               return (
                 <div
@@ -264,7 +243,7 @@ const Sidebar = forwardRef(({ onSelectNote }, ref) => {
           <div className="px-4 py-2 border-t border-neutral-200 dark:border-[#2a2a2a] bg-neutral-50 dark:bg-[#1f1f1f] flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                ⌘B
+                {shortcutLabel(["Mod", "\\"])}
               </span>
               <Button
                 type="button"

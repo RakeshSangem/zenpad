@@ -1,17 +1,40 @@
-import React, { forwardRef } from "react";
-import { Input } from "../ui/input";
+import React, { forwardRef, useLayoutEffect, useRef } from "react";
 
+// A textarea rather than an input so long titles wrap instead of scrolling
+// sideways. It still behaves like a single-field title: Enter moves on to the
+// body and pasted line breaks collapse to spaces.
 const NoteTitleInput = forwardRef(function NoteTitleInput(
   { value, onChange, onCommit, onEnter },
   ref,
 ) {
+  const innerRef = useRef(null);
+
+  const attachRef = (node) => {
+    innerRef.current = node;
+    if (typeof ref === "function") ref(node);
+    else if (ref) ref.current = node;
+  };
+
+  useLayoutEffect(() => {
+    const element = innerRef.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }, [value]);
+
+  const handleChange = (event) => {
+    const collapsed = event.target.value.replace(/[\r\n]+/g, " ");
+    if (collapsed !== event.target.value) event.target.value = collapsed;
+    onChange(event);
+  };
+
   return (
-    <Input
-      ref={ref}
-      type="text"
+    <textarea
+      ref={attachRef}
+      rows={1}
       value={value}
       maxLength={500}
-      onChange={onChange}
+      onChange={handleChange}
       onBlur={onCommit}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
@@ -19,7 +42,7 @@ const NoteTitleInput = forwardRef(function NoteTitleInput(
           onEnter();
         }
       }}
-      className="note-title-input mb-7"
+      className="note-title-input mb-7 w-full"
       placeholder="Untitled"
       aria-label="Note title"
       autoComplete="off"
@@ -31,4 +54,3 @@ const NoteTitleInput = forwardRef(function NoteTitleInput(
 NoteTitleInput.displayName = "NoteTitleInput";
 
 export default NoteTitleInput;
-

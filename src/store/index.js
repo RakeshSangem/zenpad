@@ -59,6 +59,47 @@ const createNewNote = () => {
 
 const initialNote = createNewNote();
 
+// Editing fires a store update per keystroke, and a table column-resize drag
+// fires one per pointer move. Coalescing those into one write per note keeps
+// IndexedDB (and, later, the sync queue) off the hot path. The window is short
+// and every exit path flushes, so an edit is never more than a moment from
+// being durable.
+const WRITE_WINDOW_MS = 400;
+
+const pendingWrites = new Map();
+let writeTimer = null;
+
+const flushNoteWrites = () => {
+  if (writeTimer) {
+    clearTimeout(writeTimer);
+    writeTimer = null;
+  }
+  if (pendingWrites.size === 0) return Promise.resolve();
+
+  const queued = [...pendingWrites.values()];
+  pendingWrites.clear();
+  return Promise.all(queued.map((note) => safely(putNote(note)))).then(() => {
+    if (pendingWrites.size === 0) {
+      useAppStore.setState({ saveStatus: "saved" });
+    }
+  });
+};
+
+// The caller marks saveStatus "saving" as part of its own state update; this
+// only owns the write itself.
+const queueNoteWrite = (note) => {
+  if (!note) return;
+  pendingWrites.set(note.id, note);
+  if (!writeTimer) writeTimer = setTimeout(flushNoteWrites, WRITE_WINDOW_MS);
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushNoteWrites);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushNoteWrites();
+  });
+}
+
 export const useAppStore = create((set, get) => ({
   notes: [initialNote],
   pendingDeletes: [],
@@ -70,6 +111,7 @@ export const useAppStore = create((set, get) => ({
   sidebarVisible: false,
   deleteModalOpen: false,
   shortcutsModalOpen: false,
+  quickSwitcherOpen: false,
   authModalOpen: false,
 
   isAuthenticated: false,
@@ -140,8 +182,7 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    if (updated) safely(putNote(updated));
-    setTimeout(() => set({ saveStatus: "saved" }), 600);
+    queueNoteWrite(updated);
   },
 
   updateNoteDocument: ({ document, markdown }) => {
@@ -162,8 +203,7 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    if (updated) safely(putNote(updated));
-    setTimeout(() => set({ saveStatus: "saved" }), 600);
+    queueNoteWrite(updated);
   },
 
   updateNoteTitle: (title) => {
@@ -178,11 +218,13 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    if (updated) safely(putNote(updated));
-    setTimeout(() => set({ saveStatus: "saved" }), 600);
+    queueNoteWrite(updated);
   },
 
   deleteNote: (noteId) => {
+    // Land any queued edit before the tombstone, so a late write cannot
+    // resurrect the note.
+    flushNoteWrites();
     const { currentNoteId } = get();
     let replacement;
     const deleted = get().notes.find((note) => note.id === noteId);
@@ -227,6 +269,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   switchToNote: (noteId) => {
+    flushNoteWrites();
     set({ currentNoteId: noteId });
     safely(putMetadata("currentNoteId", noteId));
   },
@@ -327,6 +370,8 @@ export const useAppStore = create((set, get) => ({
   closeSidebar: () => set({ sidebarVisible: false }),
   openDeleteModal: () => set({ deleteModalOpen: true }),
   closeDeleteModal: () => set({ deleteModalOpen: false }),
+  openQuickSwitcher: () => set({ quickSwitcherOpen: true }),
+  closeQuickSwitcher: () => set({ quickSwitcherOpen: false }),
   openShortcutsModal: () => set({ shortcutsModalOpen: true }),
   closeShortcutsModal: () => set({ shortcutsModalOpen: false }),
   openAuthModal: () => set({ authModalOpen: true }),
@@ -336,6 +381,7 @@ export const useAppStore = create((set, get) => ({
       deleteModalOpen: false,
       shortcutsModalOpen: false,
       authModalOpen: false,
+      quickSwitcherOpen: false,
     }),
 
   login: async (credentials) => {
