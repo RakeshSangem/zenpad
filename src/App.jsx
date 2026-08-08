@@ -34,8 +34,9 @@ const SHORTCUT_SECTIONS = [
     title: "Notes",
     items: [
       { label: "Search notes", keys: [["Mod", "K"]] },
+      // No key of its own: Mod+Backspace belongs to text editing.
+      { label: "Delete note (in search)", keys: [["Mod", "K"]] },
       { label: "New note", keys: [["Mod", "Alt", "N"]] },
-      { label: "Delete note", keys: [["Mod", "Backspace"]] },
       { label: "Previous / next note", keys: [["Mod", "Alt", "↑ ↓"]] },
     ],
   },

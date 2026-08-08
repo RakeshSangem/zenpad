@@ -32,6 +32,7 @@ const Editor = forwardRef((props, forwardedRef) => {
   const textareaRef = useRef(null);
   const loadingNoteRef = useRef(false);
   const appliedDocumentRef = useRef(null);
+  const titledNoteRef = useRef(null);
   const slashKeyHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
   const [slashMenu, setSlashMenu] = useState(null);
@@ -230,8 +231,15 @@ const Editor = forwardRef((props, forwardedRef) => {
       loadingNoteRef.current = false;
       setSlashMenu(null);
     }
-    if (!sidebarVisible) {
-      if (!note.title.trim() && !note.content.trim()) titleRef.current?.focus();
+    // Land in the title when arriving at an empty note — but only on arrival.
+    // This effect also runs on every content change, and stealing focus each
+    // time a note happens to be empty would pull the caret out of the editor
+    // mid-edit (clearing a note, then typing).
+    if (titledNoteRef.current !== note.id) {
+      titledNoteRef.current = note.id;
+      if (!sidebarVisible && !note.title.trim() && !note.content.trim()) {
+        titleRef.current?.focus();
+      }
     }
   }, [
     note?.id,

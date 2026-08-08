@@ -15,7 +15,6 @@ export const useKeyboardShortcuts = () => {
     shortcutsModalOpen,
     quickSwitcherOpen,
     toggleSidebar,
-    openDeleteModal,
     openShortcutsModal,
     openQuickSwitcher,
     closeAllModals,
@@ -75,16 +74,10 @@ export const useKeyboardShortcuts = () => {
         }
       }
 
-      // Delete the current note. Mod+Backspace already means something inside
-      // text — delete to start of line on macOS, delete previous word on
-      // Windows and Linux — so it only deletes a note when you are not typing.
-      // While typing, the same action is a click away in Cmd/Ctrl+K.
-      if (key === "Backspace") {
-        if (isModalOpen || isEditingTarget(event.target)) return;
-        event.preventDefault();
-        if (useAppStore.getState().notes.length > 1) openDeleteModal();
-        return;
-      }
+      // Deliberately no Mod+Backspace binding: it is a text-editing shortcut
+      // everywhere (delete to start of line on macOS, delete previous word on
+      // Windows and Linux) and the editor needs it. Deleting a note lives in
+      // Cmd/Ctrl+K and in the sidebar.
 
       // Some layouts (German, Nordic) put "\\" behind AltGr, so accept the
       // physical key as well.
@@ -143,7 +136,6 @@ export const useKeyboardShortcuts = () => {
     sidebarVisible,
     isModalOpen,
     toggleSidebar,
-    openDeleteModal,
     openShortcutsModal,
     openQuickSwitcher,
     closeAllModals,
