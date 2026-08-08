@@ -160,13 +160,19 @@
     border-radius: 0 !important;
     box-shadow: none !important;
     color: #262626;
+    display: block;
     font-size: 22px !important;
     font-weight: 590;
     height: auto;
     letter-spacing: -0.022em;
     line-height: 1.2;
     outline: none !important;
+    /* Height is driven by content in NoteTitleInput; hide the scrollbar the
+       textarea would otherwise show mid-resize. */
+    overflow: hidden;
+    overflow-wrap: break-word;
     padding: 0 !important;
+    resize: none;
   }
 
   .note-title-input::placeholder {
