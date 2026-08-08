@@ -20,6 +20,7 @@ import { Button } from "./ui/button";
 import NoteTitleInput from "./editor/NoteTitleInput";
 import SlashCommandMenu from "./editor/SlashCommandMenu";
 import TableControls from "./editor/TableControls";
+import { DocumentEdgeShortcuts } from "./editor/editorShortcuts";
 import {
   SLASH_COMMANDS,
   SlashCommandFeedback,
@@ -112,6 +113,7 @@ const Editor = forwardRef((props, forwardedRef) => {
       }),
       Markdown,
       SlashCommandFeedback,
+      DocumentEdgeShortcuts,
     ],
     content: "",
     onUpdate: ({ editor: instance }) => {

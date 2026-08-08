@@ -179,6 +179,14 @@ function AuthenticatedApp() {
                 Navigate Notes
               </span>
               <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
+                Cmd/Ctrl + Alt + ↑/↓
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-neutral-700/50">
+              <span className="text-neutral-600 dark:text-neutral-400">
+                Top / bottom of note
+              </span>
+              <kbd className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-mono text-xs rounded">
                 Cmd/Ctrl + ↑/↓
               </kbd>
             </div>

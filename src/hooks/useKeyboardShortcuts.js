@@ -69,8 +69,10 @@ export const useKeyboardShortcuts = () => {
         event.stopPropagation();
       }
 
-      // Handle arrow keys in editor (not in sidebar)
-      if (!sidebarVisible && !isModalOpen) {
+      // Cmd/Ctrl+Arrow belongs to the caret — on macOS it jumps to the start or
+      // end of the text being edited. Note navigation takes the Alt variant so
+      // both work while typing.
+      if (!sidebarVisible && !isModalOpen && event.altKey) {
         if (key === "ArrowUp") {
           event.preventDefault();
           event.stopPropagation();
