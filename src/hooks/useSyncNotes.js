@@ -10,6 +10,7 @@ const getNoteSignature = (note) =>
 export function useSyncNotes() {
   const notes = useAppStore((state) => state.notes);
   const pendingDeletes = useAppStore((state) => state.pendingDeletes);
+  const draftNoteId = useAppStore((state) => state.draftNoteId);
   const user = useAppStore((state) => state.user);
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
   const storageReady = useAppStore((state) => state.storageReady);
@@ -91,6 +92,10 @@ export function useSyncNotes() {
   useEffect(() => {
     const outgoing = [...notes, ...pendingDeletes].filter(
       (note) =>
+        // The draft is not a note yet — it has never been written locally, so
+        // there is nothing to send. Without this every device would push its
+        // own blank starter note to every other one.
+        note.id !== draftNoteId &&
         syncedSignaturesRef.current.get(note.id) !== getNoteSignature(note),
     );
     if (
@@ -137,6 +142,7 @@ export function useSyncNotes() {
   }, [
     notes,
     pendingDeletes,
+    draftNoteId,
     canSync,
     accountMatches,
     pullReadyUserId,
