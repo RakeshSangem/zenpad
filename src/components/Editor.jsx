@@ -5,7 +5,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
+import {
+  EditorContent,
+  ReactNodeViewRenderer,
+  useEditor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "@tiptap/markdown";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
@@ -20,6 +24,7 @@ import { Button } from "./ui/button";
 import NoteTitleInput from "./editor/NoteTitleInput";
 import SlashCommandMenu from "./editor/SlashCommandMenu";
 import TableControls from "./editor/TableControls";
+import TaskItemView from "./editor/TaskItemView";
 import { DocumentEdgeShortcuts } from "./editor/editorShortcuts";
 import {
   SLASH_COMMANDS,
@@ -97,7 +102,9 @@ const Editor = forwardRef((props, forwardedRef) => {
     extensions: [
       StarterKit,
       TaskList,
-      TaskItem.configure({ nested: true }),
+      TaskItem.extend({
+        addNodeView: () => ReactNodeViewRenderer(TaskItemView),
+      }).configure({ nested: true }),
       TableKit.configure({
         table: {
           resizable: true,
