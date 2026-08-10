@@ -6,9 +6,166 @@
     <title>Zenpad</title>
     <meta name="description" content="A minimal, distraction-free notepad for focused writing" />
     <link rel="icon" href="/favicon.ico" />
+    <style>
+      /* Inline: this has to be able to render when the bundle is what failed. */
+      #boot-recovery {
+        align-items: center;
+        color: #737373;
+        display: none;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 14px;
+        inset: 0;
+        justify-content: center;
+        position: fixed;
+      }
+      #boot-recovery[data-visible] {
+        display: flex;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot-recovery" role="status" aria-live="polite"></div>
+
+    <script>
+      /*
+       * Recovery for a stale app shell.
+       *
+       * A deploy replaces the hashed asset filenames and the old ones stop
+       * being served. A page still holding the previous index.html — from the
+       * service worker's precache, most often after a second deploy lands
+       * moments behind the first — then asks for a script that no longer
+       * exists and gets a 404. Nothing renders, and an ordinary reload does
+       * not help, because it is served the same stale shell. Only a
+       * cache-bypassing reload escapes, which is not something to expect of
+       * anyone.
+       *
+       * So: notice, clear the state that is pinning us to the old shell, and
+       * reload. Inline and dependency-free, because the bundle is exactly what
+       * is missing when this runs.
+       */
+      (function () {
+        var RECOVERY_KEY = "zenpad:shell-recovery";
+        var BOOT_TIMEOUT_MS = 10000;
+        var notice = document.getElementById("boot-recovery");
+        var recovering = false;
+
+        function show(message) {
+          notice.textContent = message;
+          notice.setAttribute("data-visible", "");
+        }
+
+        // Storage can throw when the browser is locked down; recovery must
+        // survive that, and the flag is only a loop guard.
+        function readFlag() {
+          try {
+            return sessionStorage.getItem(RECOVERY_KEY);
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function writeFlag(value) {
+          try {
+            if (value === null) sessionStorage.removeItem(RECOVERY_KEY);
+            else sessionStorage.setItem(RECOVERY_KEY, value);
+          } catch (error) {
+            /* nothing to do */
+          }
+        }
+
+        function recover(reason) {
+          if (recovering) return;
+          recovering = true;
+
+          // Reloading while offline cannot fetch a newer shell, and would
+          // replace a broken page with an equally broken one.
+          if (navigator.onLine === false) {
+            show("You are offline. Reconnect and reload to continue.");
+            return;
+          }
+
+          // Already tried once this session: reloading again would loop.
+          if (readFlag()) {
+            show("Zenpad failed to load. Please reload the page.");
+            return;
+          }
+
+          writeFlag(reason);
+          show("Updating Zenpad…");
+
+          // Unregistering and dropping the caches is what makes the reload
+          // behave like a hard refresh: otherwise the worker serves the same
+          // stale shell straight back. Offline support returns on the next
+          // load, when the app registers again.
+          var cleanup = [];
+          if (navigator.serviceWorker) {
+            cleanup.push(
+              navigator.serviceWorker
+                .getRegistrations()
+                .then(function (registrations) {
+                  return Promise.all(
+                    registrations.map(function (registration) {
+                      return registration.unregister();
+                    }),
+                  );
+                })
+                .catch(function () {}),
+            );
+          }
+          if (window.caches) {
+            cleanup.push(
+              caches
+                .keys()
+                .then(function (keys) {
+                  return Promise.all(
+                    keys.map(function (key) {
+                      return caches.delete(key);
+                    }),
+                  );
+                })
+                .catch(function () {}),
+            );
+          }
+
+          Promise.all(cleanup)
+            .catch(function () {})
+            .then(function () {
+              window.location.reload();
+            });
+        }
+
+        // A module script or stylesheet that 404s fires a non-bubbling error,
+        // so this has to listen in the capture phase.
+        window.addEventListener(
+          "error",
+          function (event) {
+            var element = event.target;
+            if (!element || !element.tagName) return;
+            var tag = element.tagName;
+            if (tag !== "SCRIPT" && tag !== "LINK") return;
+            var url = element.src || element.href || "";
+            if (url.indexOf("/assets/") === -1) return;
+            recover("asset:" + url.split("/").pop());
+          },
+          true,
+        );
+
+        // Dynamically imported chunks fail through Vite's own event.
+        window.addEventListener("vite:preloadError", function () {
+          recover("preload");
+        });
+
+        // Backstop for anything the two listeners above cannot see — a bundle
+        // that loads but throws on boot, for instance. If React has mounted,
+        // clear the guard so a later failure can still recover.
+        window.setTimeout(function () {
+          var root = document.getElementById("root");
+          if (root && root.childElementCount > 0) writeFlag(null);
+          else recover("timeout");
+        }, BOOT_TIMEOUT_MS);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
