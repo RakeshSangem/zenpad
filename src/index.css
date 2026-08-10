@@ -435,78 +435,114 @@
     user-select: none;
   }
 
-  .tiptap-editor .tiptap ul[data-type="taskList"] input[type="checkbox"] {
-    appearance: none;
+  /* Checkbox box, shared by ui/checkbox.jsx and ui/animated-checkbox.jsx —
+     the two look identical at rest, and everything that moves is animated by
+     motion inside the animated one. Sizing comes from --checkbox-size so
+     callers can shrink it in place. */
+  .zenpad-checkbox {
+    --checkbox-size: 16px;
+    align-items: center;
     background: transparent;
     border: 1.25px solid #737373;
-    border-radius: 3px;
+    border-radius: 999px;
+    color: white;
     cursor: pointer;
-    display: grid;
+    display: inline-flex;
     flex: 0 0 auto;
-    height: 14px;
-    margin: 0;
-    place-content: center;
-    width: 14px;
+    height: var(--checkbox-size);
+    justify-content: center;
+    padding: 0;
+    /* A transition belongs to the state being entered, so this is the drain
+       and the rule below is the fill — the circle empties faster than it
+       fills, matching the tick. */
+    transition:
+      background-color 110ms ease-out,
+      border-color 110ms ease-out;
+    width: var(--checkbox-size);
   }
 
-  .tiptap-editor
-    .tiptap
-    ul[data-type="taskList"]
-    input[type="checkbox"]::before {
-    border-bottom: 1.25px solid white;
-    border-left: 1.25px solid white;
-    content: "";
-    height: 3.5px;
-    transform: translateY(-1px) rotate(-45deg) scale(0);
-    width: 6px;
-  }
-
-  .tiptap-editor
-    .tiptap
-    ul[data-type="taskList"]
-    input[type="checkbox"]:checked {
-    background: #404040;
+  /* Hover feedback lives on the border rather than a scale: growing a 15px
+     control by a fraction of a pixel just re-rasterises the tick. */
+  /* :disabled would not match — base-ui renders a span with role="checkbox",
+     and :disabled only applies to form controls. */
+  .zenpad-checkbox:hover:not([data-disabled]) {
     border-color: #404040;
   }
 
-  .tiptap-editor
-    .tiptap
-    ul[data-type="taskList"]
-    input[type="checkbox"]:checked::before {
-    transform: translateY(-1px) rotate(-45deg) scale(1);
+  .zenpad-checkbox[data-disabled] {
+    cursor: default;
+    opacity: 0.5;
   }
 
-  .tiptap-editor
-    .tiptap
-    ul[data-type="taskList"]
-    input[type="checkbox"]:focus-visible {
+  .zenpad-checkbox:focus-visible {
     outline: 2px solid #737373;
     outline-offset: 2px;
   }
 
+  .zenpad-checkbox[data-checked] {
+    background: #404040;
+    border-color: #404040;
+    transition:
+      background-color 170ms ease,
+      border-color 170ms ease;
+  }
+
+  .zenpad-checkbox svg {
+    height: calc(var(--checkbox-size) - 5px);
+    width: calc(var(--checkbox-size) - 5px);
+  }
+
   @media (prefers-color-scheme: dark) {
-    .tiptap-editor .tiptap ul[data-type="taskList"] input[type="checkbox"] {
-      border-color: #737373;
+    .zenpad-checkbox {
+      color: #262626;
     }
 
-    .tiptap-editor
-      .tiptap
-      ul[data-type="taskList"]
-      input[type="checkbox"]:checked {
-      background: #d4d4d4;
+    .zenpad-checkbox:hover:not([data-disabled]) {
       border-color: #d4d4d4;
     }
 
-    .tiptap-editor
-      .tiptap
-      ul[data-type="taskList"]
-      input[type="checkbox"]:checked::before {
-      border-color: #262626;
+    .zenpad-checkbox[data-checked] {
+      background: #d4d4d4;
+      border-color: #d4d4d4;
     }
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] .zenpad-checkbox {
+    --checkbox-size: 15px;
   }
 
   .tiptap-editor .tiptap ul[data-type="taskList"] li > div {
     @apply min-w-0 flex-1;
+  }
+
+  /* A done item recedes. Dimming rather than striking through: ~~strikethrough~~
+     is a mark the writer can apply themselves, and it should keep meaning what
+     they meant by it.
+
+     The second rule is not redundant — an unchecked item nested under a done
+     one matches both selectors, and equal specificity means the later rule
+     wins, so it reads as still-to-do. */
+  .tiptap-editor .tiptap ul[data-type="taskList"] li[data-checked="true"] p {
+    /* One step back from #262626, not four. The filled circle is the signal;
+       the text only has to stop competing for attention. */
+    color: #525252;
+    transition: color 200ms ease;
+  }
+
+  .tiptap-editor .tiptap ul[data-type="taskList"] li[data-checked="false"] p {
+    color: #262626;
+    /* Comes back faster than it fades, like the fill. */
+    transition: color 120ms ease-out;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap ul[data-type="taskList"] li[data-checked="true"] p {
+      color: #a3a3a3;
+    }
+
+    .tiptap-editor .tiptap ul[data-type="taskList"] li[data-checked="false"] p {
+      color: #e5e5e5;
+    }
   }
 
   .tiptap-editor .tiptap blockquote {
@@ -816,3 +852,4 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
 }
+
