@@ -105,8 +105,6 @@ function AuthenticatedApp() {
 
       {shouldLoadAnalytics && <Analytics />}
 
-      <PWAUpdateBanner />
-
       <Dialog
         open={authModalOpen}
         onOpenChange={(open) => !open && closeAuthModal()}
@@ -239,11 +237,19 @@ function AuthenticatedApp() {
 function App() {
   const storageReady = useAppStore((state) => state.storageReady);
 
-  if (!storageReady) {
-    return <div className="h-full w-full bg-neutral-50 dark:bg-[#1a1a1a]" />;
-  }
-
-  return <AuthenticatedApp />;
+  return (
+    <>
+      {/* Mounted outside the storage gate on purpose: this is what registers
+          the service worker, and being available offline should not wait on
+          IndexedDB hydrating. */}
+      <PWAUpdateBanner />
+      {storageReady ? (
+        <AuthenticatedApp />
+      ) : (
+        <div className="h-full w-full bg-neutral-50 dark:bg-[#1a1a1a]" />
+      )}
+    </>
+  );
 }
 
 export default App;
