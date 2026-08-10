@@ -48,6 +48,46 @@ export default defineConfig({
         // "prompt" — claiming happens on activation, and an updated worker
         // still waits for the user to accept, because skipWaiting stays off.
         clientsClaim: true,
+        // Navigations go to the network first, and only fall back to the
+        // precached shell when that fails.
+        //
+        // The default is the other way round: navigations are answered from
+        // the precached index.html. That means a deploy can leave an online
+        // user holding the previous shell, which then asks for hashed assets
+        // the new deploy has retired, gets a 404, and renders nothing — and a
+        // reload repeats it, because the reload is served the same stale
+        // shell. Preferring the network makes that impossible while online:
+        // the document always names assets that currently exist. Offline, the
+        // fallback shell and everything it references come from the same
+        // precache, so it stays self-consistent.
+        //
+        // The cost is a round trip for a document of a few hundred bytes,
+        // bounded by networkTimeoutSeconds before falling back to the cache.
+        navigateFallback: null,
+        // Not enough on its own: the precache route resolves "/" to the
+        // precached index.html through directoryIndex, and it is registered
+        // before any runtimeCaching route, so it would answer navigations
+        // from cache no matter what is configured below. Turning it off is
+        // what actually lets the network-first route see them.
+        directoryIndex: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "zenpad-shell",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 1 },
+              cacheableResponse: { statuses: [200] },
+              // The offline fallback has to be the *precached* shell, not this
+              // strategy's own cache: the first navigation happens before the
+              // worker is controlling anything, so nothing has seeded it yet.
+              // The precache is populated at install, so it is there from the
+              // first visit.
+              precacheFallback: { fallbackURL: "/index.html" },
+            },
+          },
+        ],
       },
     }),
   ],
