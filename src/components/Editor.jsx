@@ -23,7 +23,11 @@ import SlashCommandMenu from "./editor/SlashCommandMenu";
 import TableControls from "./editor/TableControls";
 import TaskItemView from "./editor/TaskItemView";
 import LinkPopover from "./editor/LinkPopover";
-import { DocumentEdgeShortcuts } from "./editor/editorShortcuts";
+import {
+  DocumentEdgeShortcuts,
+  ListItemBackspace,
+  MergeAdjacentLists,
+} from "./editor/editorShortcuts";
 import {
   SLASH_COMMANDS,
   SlashCommandFeedback,
@@ -136,6 +140,8 @@ const Editor = forwardRef((props, forwardedRef) => {
       Markdown,
       SlashCommandFeedback,
       DocumentEdgeShortcuts,
+      ListItemBackspace,
+      MergeAdjacentLists,
     ],
     content: "",
     onUpdate: ({ editor: instance }) => {

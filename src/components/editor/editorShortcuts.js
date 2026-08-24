@@ -1,5 +1,9 @@
 import { Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { canJoin } from "@tiptap/pm/transform";
 import { isApplePlatform } from "../../lib/platform";
+import { findListItemJoinDepth } from "../../lib/listBackspace";
+import { findAdjacentListJoins } from "../../lib/listMerge";
 
 /**
  * macOS text-editing conventions the editor would otherwise get wrong.
@@ -38,5 +42,69 @@ export const DocumentEdgeShortcuts = Extension.create({
         });
       },
     };
+  },
+});
+
+/**
+ * Backspace at the start of a list item merges it into the item above rather
+ * than lifting it out of the list. Tiptap's own list keymap lifts regardless of
+ * position, which splits a list in two whenever the item is not the first one.
+ *
+ * See findListItemJoinDepth for which cases are handled here and which fall
+ * through to the default.
+ */
+export const ListItemBackspace = Extension.create({
+  name: "listItemBackspace",
+  // ListKeymap binds Backspace at the default 100, so outrank it.
+  priority: 101,
+
+  addKeyboardShortcuts() {
+    const joinIntoItemAbove = () => {
+      if (findListItemJoinDepth(this.editor.state) === null) return false;
+      return this.editor.commands.joinTextblockBackward();
+    };
+
+    return {
+      Backspace: joinIntoItemAbove,
+      "Mod-Backspace": joinIntoItemAbove,
+    };
+  },
+});
+
+/**
+ * Joins lists that end up next to each other, so a note that was split before
+ * ListItemBackspace existed repairs itself as soon as it is opened.
+ *
+ * See findAdjacentListJoins for why adjacent lists are always a mistake here.
+ */
+export const MergeAdjacentLists = Extension.create({
+  name: "mergeAdjacentLists",
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("mergeAdjacentLists"),
+        appendTransaction: (transactions, _oldState, newState) => {
+          if (!transactions.some((transaction) => transaction.docChanged)) {
+            return null;
+          }
+
+          const joins = findAdjacentListJoins(newState.doc);
+          if (!joins.length) return null;
+
+          const tr = newState.tr;
+          let joined = false;
+          // Descending, so each join leaves the remaining positions untouched.
+          for (const pos of joins) {
+            if (canJoin(tr.doc, pos)) {
+              tr.join(pos);
+              joined = true;
+            }
+          }
+
+          return joined ? tr : null;
+        },
+      }),
+    ];
   },
 });
