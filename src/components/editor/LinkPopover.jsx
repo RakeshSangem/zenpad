@@ -31,10 +31,9 @@ const ENTER = { duration: 0.15, ease: EASE_OUT };
 // Exit is quicker than enter: the user has already moved on.
 const EXIT = { duration: 0.12, ease: EASE_OUT };
 const INSTANT = { duration: 0 };
-const EDIT_WIDTH = 320;
 // Critically damped, response 0.4 -- Apple's own numbers for a reposition.
 // No overshoot: no gesture carried momentum into this, it was a click. Being a
-// spring is what lets a fast edit/cancel/edit re-target from the live width
+// spring is what lets a fast edit/cancel/edit re-target from the live layout
 // instead of restarting.
 const MORPH = { type: "spring", bounce: 0, duration: 0.4 };
 
@@ -44,20 +43,30 @@ const KIND_ICON = { mailto: Mail, tel: Phone };
 const ACTION_CLASS =
   "link-chip-action flex size-7 shrink-0 items-center justify-center rounded-[6px] text-neutral-600 outline-none transition-[background-color,color,transform] duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-900 focus-visible:bg-neutral-100 focus-visible:text-neutral-900 active:scale-[0.97] dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white dark:focus-visible:bg-neutral-700";
 
-// Same 28px slot before and after, so the swap moves nothing around it.
-function IconSwap({ swapKey, reduce, children }) {
+// The fixed wrapper keeps overlapping icon states from changing button size.
+function IconSwap({ swapKey, reduce, blend = false, children }) {
+  const soften = blend && !reduce;
+  const hidden = {
+    opacity: 0,
+    filter: soften ? "blur(2px)" : "blur(0px)",
+    transform: soften ? "scale(0.97)" : "scale(1)",
+  };
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.span
-        key={swapKey}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: reduce ? 0 : 0.1 }}
-      >
-        {children}
-      </motion.span>
-    </AnimatePresence>
+    <span className="relative grid size-4 place-items-center">
+      <AnimatePresence initial={false}>
+        <motion.span
+          key={swapKey}
+          className="absolute inset-0 flex items-center justify-center"
+          initial={hidden}
+          animate={{ opacity: 1, filter: "blur(0px)", transform: "scale(1)" }}
+          exit={hidden}
+          transition={{ duration: reduce ? 0 : blend ? 0.15 : 0.1, ease: EASE_OUT }}
+        >
+          {children}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
@@ -272,7 +281,14 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
   }, [editor, open, mode]);
 
   useEffect(() => {
-    if (editing) requestAnimationFrame(() => inputRef.current?.select());
+    if (!editing) return;
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    });
   }, [editing]);
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
@@ -295,6 +311,7 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
         .setTextSelection(range)
         .extendMarkRange("link")
         .unsetLink()
+        .setTextSelection(range.to)
         .run();
     }
   };
@@ -375,35 +392,38 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
             id={POPOVER_ID}
             role={editing ? "dialog" : "tooltip"}
             aria-label={editing ? "Edit link" : undefined}
-            // The morph animates real width, not a scale. A scale would stretch
-            // the text and drag the buttons; width reflows the children at
-            // their true size every frame, so the box genuinely grows.
+            // Floating first measures this at a hidden origin. Only editing is
+            // allowed to take a layout snapshot, so anchor updates never become
+            // Motion position animations.
+            layout={still ? false : "size"}
+            layoutDependency={editing}
             initial={still ? false : { opacity: 0 }}
-            animate={{ opacity: 1, width: editing ? EDIT_WIDTH : "auto" }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: still ? INSTANT : EXIT }}
-            transition={
-              still ? INSTANT : { opacity: ENTER, width: MORPH, default: MORPH }
-            }
-            className={`link-chip flex items-center gap-1 rounded-[10px] py-1 pl-2.5 pr-1 text-[13px] shadow-lg shadow-black/10 dark:shadow-black/40 ${
+            transition={still ? INSTANT : { opacity: ENTER, layout: MORPH }}
+            className={`link-chip flex items-center gap-1 overflow-hidden rounded-[10px] py-1 pl-2.5 pr-1 text-[13px] shadow-lg shadow-black/10 dark:shadow-black/40 ${
               invalid ? "link-chip-invalid" : ""
-            } ${editing ? "max-w-[calc(100vw-24px)]" : "max-w-[320px]"}`}
+            } ${
+              editing
+                ? "w-[320px] max-w-[calc(100vw-24px)]"
+                : "w-fit max-w-[320px]"
+            }`}
           >
-            {/* Only this half changes shape. The exiting half is popped out of
-                flow so the two crossfade in place instead of fighting over
-                width while the box is still growing. */}
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div
-                key={editing ? "edit" : "view"}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: reduce ? 0 : 0.12 }}
-                className={`flex h-7 min-w-0 items-center ${
-                  editing ? "flex-1" : "gap-1.5"
-                }`}
-              >
+            {/* This slot stays in the layout while only its contents crossfade.
+                The parent measures the new intrinsic layout; siblings move
+                with that size change instead of being remounted. */}
+            <motion.div
+              layout={still ? false : "position"}
+              layoutDependency={editing}
+              transition={still ? INSTANT : { layout: MORPH }}
+              className={`flex h-7 min-w-0 items-center ${
+                editing ? "flex-1" : "gap-1.5"
+              }`}
+            >
+              <AnimatePresence mode="popLayout" initial={false}>
                 {editing ? (
-                  <input
+                  <motion.input
+                    key="edit"
                     ref={inputRef}
                     aria-label="Link URL"
                     aria-invalid={invalid}
@@ -425,9 +445,14 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
                         ? "text-red-600 dark:text-red-400"
                         : "text-neutral-900 dark:text-neutral-100"
                     }`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduce ? 0 : 0.12 }}
                   />
                 ) : (
-                  <button
+                  <motion.button
+                    key="view"
                     type="button"
                     disabled={!display.valid}
                     title={url}
@@ -439,6 +464,10 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
                         ? "text-neutral-900 dark:text-neutral-100"
                         : "text-neutral-500"
                     }`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduce ? 0 : 0.12 }}
                   >
                     <KindIcon
                       className="size-3.5 shrink-0 text-neutral-500 dark:text-neutral-400"
@@ -453,83 +482,115 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
                         {display.path}
                       </span>
                     )}
-                  </button>
+                  </motion.button>
                 )}
-              </motion.div>
-            </AnimatePresence>
+              </AnimatePresence>
+            </motion.div>
 
-            <span className="h-4 w-px shrink-0 bg-black/10 dark:bg-white/15" />
+            <motion.span
+              layout={still ? false : "position"}
+              layoutDependency={editing}
+              transition={still ? INSTANT : { layout: MORPH }}
+              className="h-4 w-px shrink-0 bg-black/10 dark:bg-white/15"
+            />
 
-            {/* Identical in both modes -- same three slots, same widths -- so
-                the right edge only ever travels with the growing box. */}
-            <div className="flex shrink-0 items-center">
-              <button
-                type="button"
-                className={ACTION_CLASS}
-                onClick={copy}
-                aria-label="Copy link"
-              >
-                <IconSwap swapKey={copied ? "check" : "copy"} reduce={reduce}>
-                  {copied ? (
-                    <Check
-                      className="size-4 text-emerald-600 dark:text-emerald-400"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Copy
+            {/* Edit mode genuinely has one action. Copy and Unlink have no exit
+                animation, so they cannot outlive the layout that contains them. */}
+            <motion.div
+              layout={still ? false : "position"}
+              layoutDependency={editing}
+              transition={still ? INSTANT : { layout: MORPH }}
+              className="flex shrink-0 items-center"
+            >
+              <AnimatePresence initial={false}>
+                {!editing && (
+                  <motion.button
+                    key="copy-action"
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={still ? INSTANT : ENTER}
+                    className={ACTION_CLASS}
+                    onClick={copy}
+                    aria-label="Copy link"
+                  >
+                    <IconSwap
+                      swapKey={copied ? "check" : "copy"}
+                      reduce={reduce}
+                      blend
+                    >
+                      {copied ? (
+                        <Check
+                          className="size-4 text-emerald-600 dark:text-emerald-400"
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Copy
+                          className="size-4"
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </IconSwap>
+                  </motion.button>
+                )}
+                <motion.button
+                  key="edit-action"
+                  layout={still ? false : "position"}
+                  layoutDependency={editing}
+                  transition={still ? INSTANT : { layout: MORPH }}
+                  type="button"
+                  className={ACTION_CLASS}
+                  onPointerDown={
+                    editing ? (event) => event.preventDefault() : undefined
+                  }
+                  onClick={
+                    editing
+                      ? commit
+                      : () => {
+                          setDraft(url);
+                          setMode("edit");
+                        }
+                  }
+                  aria-label={editing ? "Save link" : "Edit link"}
+                >
+                  <IconSwap swapKey={editing ? "save" : "edit"} reduce={reduce}>
+                    {editing ? (
+                      <Check
+                        className="size-4"
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Pencil
+                        className="size-4"
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </IconSwap>
+                </motion.button>
+                {!editing && (
+                  <motion.button
+                    key="unlink-action"
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={still ? INSTANT : ENTER}
+                    className={`${ACTION_CLASS} hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400`}
+                    onClick={unlink}
+                    aria-label="Remove link"
+                  >
+                    <Unlink
                       className="size-4"
                       strokeWidth={1.8}
                       aria-hidden="true"
                     />
-                  )}
-                </IconSwap>
-              </button>
-              <button
-                type="button"
-                className={ACTION_CLASS}
-                onPointerDown={
-                  editing ? (event) => event.preventDefault() : undefined
-                }
-                onClick={
-                  editing
-                    ? commit
-                    : () => {
-                        setDraft(url);
-                        setMode("edit");
-                      }
-                }
-                aria-label={editing ? "Save link" : "Edit link"}
-              >
-                <IconSwap swapKey={editing ? "save" : "edit"} reduce={reduce}>
-                  {editing ? (
-                    <Check
-                      className="size-4"
-                      strokeWidth={1.8}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Pencil
-                      className="size-4"
-                      strokeWidth={1.8}
-                      aria-hidden="true"
-                    />
-                  )}
-                </IconSwap>
-              </button>
-              <button
-                type="button"
-                className={`${ACTION_CLASS} hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400`}
-                onClick={unlink}
-                aria-label="Remove link"
-              >
-                <Unlink
-                  className="size-4"
-                  strokeWidth={1.8}
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </motion.div>
         </div>
       )}

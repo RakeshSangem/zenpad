@@ -12,7 +12,6 @@ import { Markdown } from "@tiptap/markdown";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
-import Underline from "@tiptap/extension-underline";
 import { useAppStore } from "../store";
 import { resolveCommandMenuKey } from "../lib/commandKeyboard";
 import { looksLikeMarkdown } from "../lib/markdownPaste";
@@ -133,7 +132,6 @@ const Editor = forwardRef((props, forwardedRef) => {
           renderWrapper: true,
         },
       }),
-      Underline,
       Placeholder.configure({
         placeholder: "Capture a thought...",
       }),
