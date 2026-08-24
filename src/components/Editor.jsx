@@ -368,8 +368,8 @@ const Editor = forwardRef((props, forwardedRef) => {
 
       <LinkPopover ref={linkPopoverRef} editor={editor} />
 
-      <div className="group px-5 py-3 text-xs text-neutral-300 transition-colors duration-150 hover:text-neutral-500 sm:px-8 lg:px-0 dark:text-neutral-700 dark:hover:text-neutral-400">
-        <div className="mx-auto flex w-full max-w-210 items-center justify-between">
+      <div className="group py-3 text-xs text-neutral-300 transition-colors duration-150 hover:text-neutral-500 dark:text-neutral-700 dark:hover:text-neutral-400">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-5 sm:px-8 lg:pl-10 lg:pr-0">
           <div className="flex items-center gap-4">
             <span>{note.content.length} characters</span>
             <span>
