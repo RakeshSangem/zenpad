@@ -5,12 +5,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  EditorContent,
-  ReactNodeViewRenderer,
-  useEditor,
-} from "@tiptap/react";
+import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import { Markdown } from "@tiptap/markdown";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extension-placeholder";
@@ -25,7 +22,12 @@ import NoteTitleInput from "./editor/NoteTitleInput";
 import SlashCommandMenu from "./editor/SlashCommandMenu";
 import TableControls from "./editor/TableControls";
 import TaskItemView from "./editor/TaskItemView";
-import { DocumentEdgeShortcuts } from "./editor/editorShortcuts";
+import LinkPopover from "./editor/LinkPopover";
+import {
+  DocumentEdgeShortcuts,
+  ListItemBackspace,
+  MergeAdjacentLists,
+} from "./editor/editorShortcuts";
 import {
   SLASH_COMMANDS,
   SlashCommandFeedback,
@@ -35,6 +37,7 @@ import {
 const Editor = forwardRef((props, forwardedRef) => {
   const titleRef = useRef(null);
   const textareaRef = useRef(null);
+  const linkPopoverRef = useRef(null);
   const loadingNoteRef = useRef(false);
   const appliedDocumentRef = useRef(null);
   const titledNoteRef = useRef(null);
@@ -100,7 +103,22 @@ const Editor = forwardRef((props, forwardedRef) => {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      // Link is configured separately below so its paste, click and keyboard
+      // behaviour is explicit instead of hidden inside StarterKit defaults.
+      StarterKit.configure({ link: false }),
+      Link.configure({
+        autolink: true,
+        linkOnPaste: true,
+        markdownLinks: true,
+        defaultProtocol: "https",
+        openOnClick: false,
+        enableClickSelection: false,
+        HTMLAttributes: {
+          class: "zenpad-link",
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+      }),
       TaskList,
       TaskItem.extend({
         addNodeView: () => ReactNodeViewRenderer(TaskItemView),
@@ -122,6 +140,8 @@ const Editor = forwardRef((props, forwardedRef) => {
       Markdown,
       SlashCommandFeedback,
       DocumentEdgeShortcuts,
+      ListItemBackspace,
+      MergeAdjacentLists,
     ],
     content: "",
     onUpdate: ({ editor: instance }) => {
@@ -165,6 +185,20 @@ const Editor = forwardRef((props, forwardedRef) => {
   };
 
   const handleEditorKeyDown = (event) => {
+    if (
+      !event.isComposing &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.key.toLowerCase() === "k"
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      setSlashMenu(null);
+      linkPopoverRef.current?.open();
+      return true;
+    }
+
     if (!slashMenu) return;
     const action = resolveCommandMenuKey(
       event,
@@ -333,6 +367,8 @@ const Editor = forwardRef((props, forwardedRef) => {
         onSelect={runSlashCommand}
         onDismiss={() => setSlashMenu(null)}
       />
+
+      <LinkPopover ref={linkPopoverRef} editor={editor} />
 
       <div className="group px-5 py-3 text-xs text-neutral-300 transition-colors duration-150 hover:text-neutral-500 sm:px-8 lg:px-0 dark:text-neutral-700 dark:hover:text-neutral-400">
         <div className="mx-auto flex w-full max-w-210 items-center justify-between">

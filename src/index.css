@@ -245,6 +245,113 @@
     font-weight: 600;
   }
 
+  .tiptap-editor .tiptap a.zenpad-link {
+    color: lch(44.073 70 286.91);
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 120ms ease-out;
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .link-chip {
+      min-height: 40px;
+    }
+
+    .link-chip-action {
+      height: 44px;
+      width: 44px;
+    }
+  }
+
+  /* A floating material, not an opaque panel: the sentence stays readable
+     underneath, which is what tells you the popover belongs to the link it
+     is sitting on top of. Small surface, so the blur stays modest. */
+  .link-chip {
+    background: rgb(255 255 255 / 0.72);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgb(0 0 0 / 0.1);
+    /* Light catching the top edge of the glass. */
+    border-top-color: rgb(255 255 255 / 0.9);
+    /* Vibrancy: 13px text over shifting content needs a little more tracking
+       to stay crisp. Large text would want negative tracking instead. */
+    letter-spacing: 0.005em;
+  }
+
+  .link-chip-invalid {
+    border-color: lch(52 78 27);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .link-chip {
+      background: rgb(36 36 36 / 0.72);
+      border-color: rgb(255 255 255 / 0.1);
+      border-top-color: rgb(255 255 255 / 0.16);
+    }
+
+    .link-chip-invalid {
+      border-color: lch(62 70 27);
+    }
+  }
+
+  /* Reduced transparency: frostier until it is simply solid. */
+  @media (prefers-reduced-transparency: reduce) {
+    .link-chip {
+      background: #fff;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
+    .link-chip {
+      background: #242424;
+    }
+  }
+
+  /* More contrast: solid ground and a border that is actually visible. */
+  @media (prefers-contrast: more) {
+    .link-chip {
+      background: #fff;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      border-color: #000;
+      border-top-color: #000;
+    }
+  }
+
+  @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+    .link-chip {
+      background: #000;
+      border-color: #fff;
+      border-top-color: #fff;
+    }
+  }
+
+  .tiptap-editor .tiptap a.zenpad-link:hover {
+    color: lch(38 70 286.91);
+  }
+
+  .tiptap-editor .tiptap a.zenpad-link:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid lch(44.073 70 286.91 / 0.45);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tiptap-editor .tiptap a.zenpad-link {
+      color: hsl(227 68% 65%);
+    }
+
+    .tiptap-editor .tiptap a.zenpad-link:hover {
+      color: hsl(227 68% 72%);
+    }
+
+    .tiptap-editor .tiptap a.zenpad-link:focus-visible {
+      outline-color: hsl(227 68% 65% / 0.55);
+    }
+  }
+
   .tiptap-editor .tiptap h1 {
     font-size: 22px;
     font-weight: 590;
@@ -852,4 +959,3 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
 }
-
