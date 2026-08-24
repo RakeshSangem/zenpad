@@ -61,6 +61,14 @@ function IconSwap({ swapKey, reduce, children }) {
   );
 }
 
+// domAtPos lands on the parent paragraph when pos sits on a link boundary, so
+// probe just inside the selection instead of at its edge.
+function linkElementAt(editor, pos) {
+  const dom = editor.view.domAtPos(pos).node;
+  const node = dom.nodeType === Node.ELEMENT_NODE ? dom : dom.parentElement;
+  return node?.closest?.("a.zenpad-link") || null;
+}
+
 function rangeFor(editor, element) {
   try {
     return {
@@ -94,6 +102,9 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
 
   const modeRef = useRef(mode);
   modeRef.current = mode;
+  // A popover the selection is holding open must not be dismissed by the
+  // pointer wandering off it.
+  const selectionDriven = useRef(false);
 
   const open = mode !== "hidden";
   const editing = mode === "edit";
@@ -103,6 +114,7 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
   const close = useCallback(() => {
     clearTimeout(hoverTimer.current);
     clearTimeout(leaveTimer.current);
+    selectionDriven.current = false;
     linkRef.current?.removeAttribute("aria-describedby");
     linkRef.current = null;
     setMode("hidden");
@@ -132,6 +144,7 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
     clearTimeout(leaveTimer.current);
     // Editing is deliberate, so only drop the popover when it is idle.
     leaveTimer.current = setTimeout(() => {
+      if (selectionDriven.current) return;
       if (modeRef.current === "view") close();
     }, LEAVE_DELAY);
   }, [close]);
@@ -142,11 +155,8 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
       open() {
         const { from, to } = editor.state.selection;
         rangeRef.current = { from, to };
-        const dom = editor.view.domAtPos(from).node;
-        const element = (
-          dom.nodeType === Node.ELEMENT_NODE ? dom : dom.parentElement
-        )?.closest?.("a.zenpad-link");
-        linkRef.current = element || null;
+        const element = linkElementAt(editor, from);
+        linkRef.current = element;
         const href =
           element?.getAttribute("href") ||
           editor.getAttributes("link").href ||
@@ -208,6 +218,38 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
       root.removeEventListener("click", click, true);
     };
   }, [close, editor, scheduleHide, show]);
+
+  // Selecting link text opens the popover too: reaching a link by keyboard
+  // should not be worse than reaching it by mouse.
+  useEffect(() => {
+    if (!editor) return;
+
+    const onSelectionUpdate = () => {
+      // Editing owns the popover, and commit() moves the selection itself.
+      if (modeRef.current === "edit") return;
+
+      const { from, to, empty } = editor.state.selection;
+      // Probe inside the selection, never on its boundary.
+      const element = empty
+        ? null
+        : linkElementAt(editor, Math.min(from + 1, to));
+      const range = element ? rangeFor(editor, element) : null;
+      // Only when the selection sits within one link. Selecting a paragraph
+      // that happens to contain links should not pop anything up.
+      const holdsLink = range && from >= range.from && to <= range.to;
+
+      if (!holdsLink) {
+        if (selectionDriven.current) close();
+        return;
+      }
+
+      show(element, "view", true);
+      selectionDriven.current = true;
+    };
+
+    editor.on("selectionUpdate", onSelectionUpdate);
+    return () => editor.off("selectionUpdate", onSelectionUpdate);
+  }, [close, editor, show]);
 
   // Keep the popover anchored to the link (or the selection, for ⌘K).
   useLayoutEffect(() => {
