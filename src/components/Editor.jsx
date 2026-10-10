@@ -22,6 +22,7 @@ import SlashCommandMenu from "./editor/SlashCommandMenu";
 import TableControls from "./editor/TableControls";
 import TaskItemView from "./editor/TaskItemView";
 import LinkPopover from "./editor/LinkPopover";
+import { AutolinkPunctuation } from "./editor/autolinkPunctuation";
 import {
   DocumentEdgeShortcuts,
   ListItemBackspace,
@@ -32,6 +33,8 @@ import {
   SlashCommandFeedback,
   slashFeedbackKey,
 } from "./editor/slashCommands";
+
+const LINK_PROTOCOL = "https";
 
 const Editor = forwardRef((props, forwardedRef) => {
   const titleRef = useRef(null);
@@ -105,11 +108,14 @@ const Editor = forwardRef((props, forwardedRef) => {
       // Link is configured separately below so its paste, click and keyboard
       // behaviour is explicit instead of hidden inside StarterKit defaults.
       StarterKit.configure({ link: false }),
-      Link.configure({
+      // The mark ships inclusive whenever autolink is on, which makes anything
+      // typed against a link's edge join the link. Keep it exclusive so a link
+      // only ever covers the text it was applied to.
+      Link.extend({ inclusive: () => false }).configure({
         autolink: true,
         linkOnPaste: true,
         markdownLinks: true,
-        defaultProtocol: "https",
+        defaultProtocol: LINK_PROTOCOL,
         openOnClick: false,
         enableClickSelection: false,
         HTMLAttributes: {
@@ -136,6 +142,7 @@ const Editor = forwardRef((props, forwardedRef) => {
         placeholder: "Capture a thought...",
       }),
       Markdown,
+      AutolinkPunctuation.configure({ defaultProtocol: LINK_PROTOCOL }),
       SlashCommandFeedback,
       DocumentEdgeShortcuts,
       ListItemBackspace,
