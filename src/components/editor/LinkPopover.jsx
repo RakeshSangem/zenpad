@@ -78,6 +78,25 @@ function linkElementAt(editor, pos) {
   return node?.closest?.("a.zenpad-link") || null;
 }
 
+// A selection that ends on whitespace -- a drag that ran past the last letter,
+// or a triple click -- would otherwise mark that space, leaving a clickable gap
+// between the link and the word after it. Walked a position at a time because
+// only text positions hold a character: a node boundary reads as empty and
+// stops the walk.
+function trimmedRange(editor, range) {
+  if (!range || range.from === range.to) return range;
+  const { doc } = editor.state;
+  const isSpaceAt = (pos) => {
+    const character = doc.textBetween(pos, pos + 1);
+    return character !== "" && character.trim() === "";
+  };
+
+  let { from, to } = range;
+  while (from < to && isSpaceAt(from)) from += 1;
+  while (to > from && isSpaceAt(to - 1)) to -= 1;
+  return from < to ? { from, to } : range;
+}
+
 function rangeFor(editor, element) {
   try {
     return {
@@ -164,7 +183,9 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
       open() {
         const { from, to } = editor.state.selection;
         rangeRef.current = { from, to };
-        const element = linkElementAt(editor, from);
+        // Probe inside the selection, never on its boundary: a selection that
+        // starts where a link ends is new text, not that link.
+        const element = linkElementAt(editor, from === to ? from : from + 1);
         linkRef.current = element;
         const href =
           element?.getAttribute("href") ||
@@ -323,9 +344,13 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
       inputRef.current?.focus();
       return;
     }
-    const range = rangeRef.current;
+    const range = trimmedRange(editor, rangeRef.current);
     const chain = editor.chain().focus().setTextSelection(range);
-    if (range.from === range.to && !linkRef.current) {
+    if (linkRef.current) {
+      // Editing a link the popover is pointing at: the whole mark takes the
+      // new href, however much of it the selection covers.
+      chain.extendMarkRange("link").setLink({ href: normalized }).run();
+    } else if (range.from === range.to) {
       chain
         .insertContent(normalized)
         .setTextSelection({
@@ -336,7 +361,9 @@ const LinkPopover = forwardRef(function LinkPopover({ editor }, forwardedRef) {
         .setTextSelection(range.from + normalized.length)
         .run();
     } else {
-      chain.extendMarkRange("link").setLink({ href: normalized }).run();
+      // New link: exactly the selected words. extendMarkRange here would let a
+      // selection that merely touches a neighbouring link swallow it.
+      chain.setLink({ href: normalized }).run();
     }
     close();
   };
