@@ -59,6 +59,23 @@ const createNewNote = () => {
 
 const initialNote = createNewNote();
 
+/** Nothing has been written into this note yet. */
+const isBlank = (note) => !note?.title.trim() && !note?.content.trim();
+
+/**
+ * Drop the current draft if it is still untouched.
+ *
+ * Called when leaving a draft behind. A draft was never written to disk, so
+ * this is only a list edit — there is nothing to delete and no tombstone to
+ * sync, which is what makes discarding one safe. A note that *became* empty is
+ * a different thing entirely and is never touched here.
+ */
+const withoutUntouchedDraft = (state) => {
+  const draft = state.notes.find((note) => note.id === state.draftNoteId);
+  if (!draft || !isBlank(draft)) return state.notes;
+  return state.notes.filter((note) => note.id !== state.draftNoteId);
+};
+
 // Editing fires a store update per keystroke, and a table column-resize drag
 // fires one per pointer move. Coalescing those into one write per note keeps
 // IndexedDB (and, later, the sync queue) off the hot path. The window is short
@@ -93,6 +110,25 @@ const queueNoteWrite = (note) => {
   if (!writeTimer) writeTimer = setTimeout(flushNoteWrites, WRITE_WINDOW_MS);
 };
 
+// A draft turns into a real note the moment it holds something, and only then
+// does it reach disk. Until that point nothing about it is written, so a blank
+// note nobody typed into leaves no trace — not in IndexedDB, not on the server.
+const persistEdit = (updated) => {
+  if (!updated) return;
+  const { draftNoteId } = useAppStore.getState();
+
+  if (updated.id === draftNoteId) {
+    if (isBlank(updated)) {
+      // Typed and then deleted again: still nothing worth keeping.
+      useAppStore.setState({ saveStatus: "saved" });
+      return;
+    }
+    useAppStore.setState({ draftNoteId: null });
+  }
+
+  queueNoteWrite(updated);
+};
+
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", flushNoteWrites);
   document.addEventListener("visibilitychange", () => {
@@ -104,6 +140,10 @@ export const useAppStore = create((set, get) => ({
   notes: [initialNote],
   pendingDeletes: [],
   currentNoteId: initialNote.id,
+  // The one note that has never been written to, tracked here rather than as a
+  // field on the note itself: note records go to the server, whose schema is
+  // strict, and an unexpected key would reject the whole batch.
+  draftNoteId: initialNote.id,
   storageReady: false,
   markdownEnabled: true,
   syncAccountId: null,
@@ -123,23 +163,20 @@ export const useAppStore = create((set, get) => ({
     await migrateLegacyLocalStorage();
     const storedNotes = await getAllNotes();
     const pendingDeletes = storedNotes.filter((note) => note.isDeleted);
-    let notes = storedNotes.filter((note) => !note.isDeleted);
-    if (notes.length === 0) {
-      notes = [initialNote];
-      await putNote(initialNote);
-    }
-    const requestedId = await getMetadata("currentNoteId", notes[0].id);
-    const currentNoteId = notes.some((note) => note.id === requestedId)
-      ? requestedId
-      : notes[0].id;
+    const stored = storedNotes.filter((note) => !note.isDeleted);
+    // Opening the app always lands on a blank draft, whatever was open last
+    // time. Writing something down should never start with deciding where to
+    // put it; everything already written is a Cmd/Ctrl+K away.
+    const draft = createNewNote();
     // Markdown is the only editor mode for now. The setting actions remain
     // available for the future settings screen.
     const markdownEnabled = true;
     const syncAccountId = await getMetadata("syncAccountId", null);
     set({
-      notes,
+      notes: [draft, ...stored],
       pendingDeletes,
-      currentNoteId,
+      currentNoteId: draft.id,
+      draftNoteId: draft.id,
       markdownEnabled,
       syncAccountId,
       storageReady: true,
@@ -155,12 +192,12 @@ export const useAppStore = create((set, get) => ({
   createNote: () => {
     const note = createNewNote();
     set((state) => ({
-      notes: [note, ...state.notes],
+      // Nothing is written here: the note reaches disk on its first character.
+      notes: [note, ...withoutUntouchedDraft(state)],
       currentNoteId: note.id,
+      draftNoteId: note.id,
       saveStatus: "saved",
     }));
-    safely(putNote(note));
-    safely(putMetadata("currentNoteId", note.id));
     return note.id;
   },
 
@@ -182,7 +219,7 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    queueNoteWrite(updated);
+    persistEdit(updated);
   },
 
   updateNoteDocument: ({ document, markdown }) => {
@@ -203,7 +240,7 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    queueNoteWrite(updated);
+    persistEdit(updated);
   },
 
   updateNoteTitle: (title) => {
@@ -218,19 +255,23 @@ export const useAppStore = create((set, get) => ({
       }),
       saveStatus: "saving",
     }));
-    queueNoteWrite(updated);
+    persistEdit(updated);
   },
 
   deleteNote: (noteId) => {
     // Land any queued edit before the tombstone, so a late write cannot
     // resurrect the note.
     flushNoteWrites();
-    const { currentNoteId } = get();
+    const { currentNoteId, draftNoteId } = get();
     let replacement;
     const deleted = get().notes.find((note) => note.id === noteId);
-    const tombstone = deleted
-      ? { ...deleted, isDeleted: true, updatedAt: new Date().toISOString() }
-      : null;
+    // A draft only ever existed in memory, so there is nothing to tombstone and
+    // nothing to tell the server about — deleting one is just forgetting it.
+    const wasDraft = noteId === draftNoteId;
+    const tombstone =
+      deleted && !wasDraft
+        ? { ...deleted, isDeleted: true, updatedAt: new Date().toISOString() }
+        : null;
     set((state) => {
       const remaining = state.notes.filter((note) => note.id !== noteId);
       if (remaining.length === 0) {
@@ -238,7 +279,6 @@ export const useAppStore = create((set, get) => ({
         remaining.push(replacement);
       }
       const nextId = noteId === currentNoteId ? remaining[0].id : currentNoteId;
-      safely(putMetadata("currentNoteId", nextId));
       return {
         notes: remaining,
         pendingDeletes: tombstone
@@ -248,11 +288,11 @@ export const useAppStore = create((set, get) => ({
             ]
           : state.pendingDeletes,
         currentNoteId: nextId,
+        draftNoteId: replacement ? replacement.id : wasDraft ? null : draftNoteId,
       };
     });
     if (tombstone) safely(putNote(tombstone));
-    else safely(removeNote(noteId));
-    if (replacement) safely(putNote(replacement));
+    else if (!wasDraft) safely(removeNote(noteId));
   },
 
   acknowledgeDeletes: (acceptedIds) => {
@@ -270,8 +310,18 @@ export const useAppStore = create((set, get) => ({
 
   switchToNote: (noteId) => {
     flushNoteWrites();
-    set({ currentNoteId: noteId });
-    safely(putMetadata("currentNoteId", noteId));
+    set((state) => {
+      if (noteId === state.draftNoteId) return { currentNoteId: noteId };
+      // Leaving an untouched draft behind discards it, so opening the app and
+      // then going to read something else does not litter the list. A draft
+      // that had anything typed into it stopped being a draft at that point,
+      // so this can only ever drop an empty one.
+      return {
+        notes: withoutUntouchedDraft(state),
+        draftNoteId: null,
+        currentNoteId: noteId,
+      };
+    });
   },
 
   navigateNotes: (direction) => {
@@ -361,7 +411,6 @@ export const useAppStore = create((set, get) => ({
       ),
     }));
     changed.forEach((note) => safely(putNote(note)));
-    safely(putMetadata("currentNoteId", currentNoteId));
   },
 
   toggleSidebar: () =>
